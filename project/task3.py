@@ -85,10 +85,12 @@ def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
 
     return nfa
 
-def transitive_closure(mat: spmatrix) -> csr_matrix:
-    closure = csr_matrix(mat)
-    for _ in range(ceil(log2(mat.get_shape()[0]))):
-        closure += closure @ closure
+def transitive_closure(automaton: FiniteAutomaton):
+    if len(automaton.m.values()) == 0:
+        return dok_matrix((0, 0), dtype=bool)
+    closure = sum(automaton.m.values())
+    for _ in range(closure .shape[0]):
+        closure += closure  @ closure
     return closure
 
 
