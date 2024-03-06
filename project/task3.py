@@ -11,7 +11,7 @@ from itertools import product
 class FiniteAutomaton:
     def __init__(self, obj=None, start=None, final=None, mapping=None):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
-                obj, NondeterministicFiniteAutomaton
+            obj, NondeterministicFiniteAutomaton
         ):
             mat = nfa_to_matrix(obj)
             self.m, self.start, self.final, self.mapping = (
@@ -44,7 +44,8 @@ def nfa_to_matrix(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton
     mapping = {v: i for i, v in enumerate(automaton.states)}
     m = {
         label: dok_matrix((len_states, len_states), dtype=bool)
-        for label in automaton.symbols}
+        for label in automaton.symbols
+    }
 
     for u, edges in states.items():
         for label, v_set in {
