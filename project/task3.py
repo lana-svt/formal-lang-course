@@ -40,19 +40,20 @@ def transitive_closure(mat: spmatrix) -> csr_matrix:
 
 
 def nfa_to_matrix(automaton):
-    states = automaton.to_dict()
     len_states = len(automaton.states)
     mapping = {v: i for i, v in enumerate(automaton.states)}
     m = dict()
 
     for label in automaton.symbols:
         matrix = [[False] * len_states for _ in range(len_states)]
-        for u, transitions in states.items():
-            for v in transitions.get(label, []):
+        for u in automaton.states:
+            transitions = automaton.get_transitions(u, label, [])
+            for v in transitions:
                 matrix[mapping[u]][mapping[v]] = True
         m[label] = matrix
 
     return m, State(automaton.start), set(map(State, automaton.final)), mapping
+
 
 def matrix_to_nfa(matrix, start, final, mapping):
     nfa = NondeterministicFiniteAutomaton()
