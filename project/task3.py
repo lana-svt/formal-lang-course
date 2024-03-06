@@ -15,7 +15,13 @@ from math import log2, ceil
 class FiniteAutomaton:
     def __init__(self, obj=None, start=None, final=None, mapping=None):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
-            self.m, self.start, self.final, self.mapping = nfa_to_mat(obj)
+            mat = nfa_to_mat(obj)
+            self.m, self.start, self.final, self.mapping = (
+                mat.m,
+                mat.start,
+                mat.final,
+                mat.mapping,
+            )
         else:
             self.m = obj if obj is not None else []
             self.start = start if start is not None else set()
@@ -27,12 +33,7 @@ class FiniteAutomaton:
         return nfa.accepts("".join(list(word)))
 
     def is_empty(self):
-        if len(self.m) == 0:
-            return True
-        for state in self.m:
-            if state:
-                return False
-        return True
+        return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
 
     def mapping_for(self, u):
         return self.mapping[State(u)]
