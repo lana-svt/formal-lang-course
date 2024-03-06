@@ -10,7 +10,7 @@ from math import log2, ceil
 class FiniteAutomaton:
     def __init__(self, obj=None, start=None, final=None, mapping=None):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
-            self.m, self.start, self.final, self.mapping = nfa_to_mat(obj)
+            self.m, self.start, self.final, self.mapping = nfa_to_matrix(obj)
         else:
             self.m = obj if obj is not None else []
             self.start = start if start is not None else set()
@@ -18,7 +18,7 @@ class FiniteAutomaton:
             self.mapping = mapping if mapping is not None else {}
 
     def accepts(self, word):
-        nfa = mat_to_nfa(self)
+        nfa = matrix_to_nfa(self)
         return nfa.accepts(word)
 
     def is_empty(self):
@@ -40,7 +40,7 @@ def transitive_closure(mat: spmatrix) -> csr_matrix:
     return closure
 
 
-def nfa_to_mat(automaton):
+def nfa_to_matrix(automaton):
     #states = {}
     len_states = len(automaton.states)
     mapping = {state: index for index, state in enumerate(automaton.states)}
@@ -59,7 +59,7 @@ def nfa_to_mat(automaton):
 
     return fa
 
-def mat_to_nfa(automaton):
+def matrix_to_nfa(automaton):
     nfa = NondeterministicFiniteAutomaton()
 
     for label in automaton.m.keys():
