@@ -85,10 +85,12 @@ def intersect_automata(
     for state1, idx1 in automaton1.mapping.items():
         for state2, idx2 in automaton2.mapping.items():
             new_idx = len(mapping)
-            mapping[(state1.state, state2.state)] = new_idx
-            if state1 == automaton1.start and state2 == automaton2.start:
-                start.add(new_idx)
+            combined_state = (state1, state2)
+            mapping[combined_state] = new_idx
+            if state1 in automaton1.start and state2 in automaton2.start:
+                start.add(combined_state)
             if state1 in automaton1.final and state2 in automaton2.final:
-                final.add(new_idx)
+                final.add(combined_state)
 
     return FiniteAutomaton(obj=m, start=start, final=final, mapping=mapping)
+
