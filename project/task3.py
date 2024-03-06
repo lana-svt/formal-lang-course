@@ -1,5 +1,3 @@
-from typing import Iterable
-from networkx import MultiDiGraph
 from pyformlang.finite_automaton import (
     DeterministicFiniteAutomaton,
     NondeterministicFiniteAutomaton,
@@ -13,8 +11,16 @@ from math import log2, ceil
 
 
 class FiniteAutomaton:
-    def __init__(self, obj=None, start=None, final=None, mapping=None):
-        if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
+
+    m = None
+    start = None
+    final = None
+    mapping = None
+
+    def __init__(self, obj: any, start=set(), final=set(), mapping=dict()):
+        if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
+            obj, NondeterministicFiniteAutomaton
+        ):
             mat = nfa_to_mat(obj)
             self.m, self.start, self.final, self.mapping = (
                 mat.m,
@@ -23,25 +29,19 @@ class FiniteAutomaton:
                 mat.mapping,
             )
         else:
-            self.m = obj if obj is not None else []
-            self.start = start if start is not None else set()
-            self.final = final if final is not None else set()
-            self.mapping = mapping if mapping is not None else {}
+            self.m, self.start, self.final, self.mapping = obj, start, final, mapping
 
-    def accepts(self, word):
+    def accepts(self, word) -> bool:
         nfa = mat_to_nfa(self)
-        return nfa.accepts("".join(list(word)))
+        real_word = "".join(list(word))
+        return nfa.accepts(real_word)
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
 
-    def mapping_for(self, u):
+    def mapping_for(self, u) -> int:
         return self.mapping[State(u)]
 
-def as_set(obj):
-    if not isinstance(obj, set):
-        return {obj}
-    return obj
 
 def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     states = automaton.to_dict()
@@ -53,7 +53,7 @@ def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
         m[label] = dok_matrix((len_states, len_states), dtype=bool)
         for u, edges in states.items():
             if label in edges:
-                for v in as_set(edges[label]):
+                for v in ({edges[label]} if isinstance(edges[label], set) else {edges[label]}):
                     m[label][mapping[u], mapping[v]] = True
 
     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
@@ -77,9 +77,6 @@ def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
         nfa.add_final_state(automaton.mapping_for(s))
 
     return nfa
-
-
-
 
 def transitive_closure(mat: spmatrix) -> csr_matrix:
     closure = csr_matrix(mat)

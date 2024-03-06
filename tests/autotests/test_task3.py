@@ -8,6 +8,7 @@ from pyformlang.regular_expression import Regex
 import pytest
 import random
 import itertools
+import numpy
 import networkx as nx
 
 # Fix import statements in try block to run tests
