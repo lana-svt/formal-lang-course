@@ -1,3 +1,5 @@
+from typing import Iterable
+from networkx import MultiDiGraph
 from pyformlang.finite_automaton import (
     DeterministicFiniteAutomaton,
     NondeterministicFiniteAutomaton,
@@ -43,6 +45,11 @@ class FiniteAutomaton:
         return self.mapping[State(u)]
 
 
+def as_set(obj):
+    if not isinstance(obj, set):
+        return {obj}
+    return obj
+
 def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     states = automaton.to_dict()
     len_states = len(automaton.states)
@@ -53,7 +60,7 @@ def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
         m[label] = dok_matrix((len_states, len_states), dtype=bool)
         for u, edges in states.items():
             if label in edges:
-                for v in ({edges[label]} if isinstance(edges[label], set) else {edges[label]}):
+                for v in as_set(edges[label]):
                     m[label][mapping[u], mapping[v]] = True
 
     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
