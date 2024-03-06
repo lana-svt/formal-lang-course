@@ -5,6 +5,7 @@ from pyformlang.finite_automaton import (
 )
 from scipy.sparse import kron, csr_matrix
 from math import log2, ceil
+import numpy as np
 
 class FiniteAutomaton:
     def __init__(self, obj=None, start=set(), final=set(), mapping=dict()):
@@ -66,26 +67,25 @@ def matrix_to_nfa(matrix, start, final, mapping):
 
     return nfa
 
-def intersect_automata(
-    automaton1: FiniteAutomaton, automaton2: FiniteAutomaton
-) -> FiniteAutomaton:
-    common_labels = automaton1.m.keys() & automaton2.m.keys()
-    m = {}
-    start = set()
-    final = set()
-    mapping = {}
+def intersect_automata(automaton1: FiniteAutomaton,
+                       automaton2: FiniteAutomaton) -> FiniteAutomaton:
+    result = FiniteAutomaton()
 
-    for label in common_labels:
-        m[label] = kron(automaton1.m[label], automaton2.m[label])
+    matrices1 = automaton1.m
+    matrices2 = automaton2.m
 
-    for state1, idx1 in automaton1.mapping.items():
-        for state2, idx2 in automaton2.mapping.items():
-            new_idx = len(mapping)
-            combined_state = (state1, state2)
-            mapping[combined_state] = new_idx
-            if state1 in automaton1.start and state2 in automaton2.start:
-                start.add(combined_state)
-            if state1 in automaton1.final and state2 in automaton2.final:
-                final.add(combined_state)
+    symbols = set(matrices1.keys()).intersection(matrices2.keys())
 
-    return FiniteAutomaton(obj=m, start=start, final=final, mapping=mapping)
+    result_matrices = {}
+    for s in symbols:
+        matrix1 = matrices1[s]
+        matrix2 = matrices2[s]
+        intersection_matrix = np.logical_and(matrix1, matrix2)
+        result_matrices[s] = intersection_matrix
+
+    result.m = result_matrices
+
+    result.start = automaton1.start.intersection(automaton2.start)
+    result.final = automaton1.final.intersection(automaton2.final)
+
+    return result
