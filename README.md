@@ -23,6 +23,20 @@
 - Сторонние пакеты из `requirements.txt` файла
 - Английский язык для документации или самодокументирующийся код
 
+## Содержание
+
+* [Из чего складывается оценка за курс](#из-чего-складывается-оценка-за-курс)
+  * [Летучки](#летучки)
+  * [Домашние практические работы](#домашние-практические-работы)
+* [Работа с проектом](#работа-с-проектом)
+* [Домашние практические работы](#домашние-практические-работы-1)
+* [Код](#код)
+* [Тесты](#тесты)
+* [Эксперименты](#эксперименты)
+* [Структура репозитория](#структура-репозитория)
+* [Контакты](#контакты)
+* [Вместо введения](#вместо-введения)
+
 ## Из чего складывается оценка за курс
 
 Оценка за курс складывается из баллов, полученных за работу в семестре. Баллы начисляются за следующее.
@@ -66,7 +80,7 @@
 ### Домашние практические работы
 
 Работы бывают двух типов:
-- С полностью автоматической проверкой. Подразумевается, что к этим задачам известен набор тестов и если он проходит, то задача засчитывается. Количество баллов за такие задачи не менее 60. То есть написав все летучки и сдав все такие задачи можно гарантированно получить 3 (E-D) за курс.
+- С полностью автоматической проверкой. Подразумевается, что к этим задачам известны название и сигнатуры функций, а также набор тестов; если тесты проходят, то задача засчитывается. Количество баллов за такие задачи не менее 60. То есть написав все летучки и сдав все такие задачи можно гарантированно получить 3 (E-D) за курс.
 - Требующие проверки преподавателем или ассистентом. Как правило, это задачи на постановку экспериментов или разработку относительно нетривиальных решений. Они основаны на задачах предыдущего типа, потому решать их в изоляции затруднительно.
 
 У всех задач есть дедлайн (как правило --- неделя с момента, когда она была задана) после которого максимальный балл за задачу падает в два раза.
@@ -123,6 +137,22 @@
 
 ## Тесты
 
+Тесты бывают двух видов: заготовленные преподавателем и ваши собственные.
+
+Заготовленные тесты существуют в папке `tests/autotests` и используются для проверки задач с полностью автоматической проверкой.
+При работе с ними следует соблюдать следующие правила:
+- В данных тестах обычно можно изменять только одно --- блок
+  ```python
+  try:
+      from project.task2 import regex_to_dfa, graph_to_nfa
+  except ImportError:
+      pytestmark = pytest.mark.skip("Task 2 is not ready to test!")
+  ```
+  В нём необходимо указать из какого(их) модуля(ей) импортировать требуемые функции, в ином случае тесты пропускаются.
+- В случае, если вы нашли ошибку **И** готовы её исправить, файл можно изменять, а затем отправлять изменение с помощью Pull Request в основной репозиторий.
+- Если же вы нашли ошибку и не готовы заниматься её исправлением, то об этом нужно срочно сообщить преподавателю и не предпринимать других действий!
+
+К вашим собственным тестам применяются следующие правила:
 - Тесты для домашних заданий размещайте в папке `tests`.
 - Формат именования файлов с тестами `test_[какой модуль\класс\функцию тестирует].py`.
 - Для работы с тестами рекомендуется использовать [`pytest`](https://docs.pytest.org/en/6.2.x/).
@@ -149,6 +179,7 @@
 ├── scripts - вспомогательные скрипты для автоматизации разработки
 ├── tasks - файлы с описанием домашних заданий
 ├── tests - директория для unit-тестов домашних работ
+│   └── autotests - директория с автотестами для домашних работ
 ├── README.md - основная информация о проекте
 └── requirements.txt - зависимости для настройки репозитория
 ```
@@ -178,14 +209,14 @@
   - Интерливинг (или шафл) языков для верификаци многопоточных программ.
     - [Approximating the Shuffle of Context-free Languages to Find Bugs in Concurrent Recursive Programs](http://uu.diva-portal.org/smash/get/diva2:442518/FULLTEXT01.pdf)
     - Flick N.E. (2015) Quotients of Unbounded Parallelism. In: Leucker M., Rueda C., Valencia F. (eds) Theoretical Aspects of Computing - ICTAC 2015. ICTAC 2015. Lecture Notes in Computer Science, vol 9399. Springer, Cham
-   
+
   - Система типов Java: [Radu Grigore, Java Generics are Turing Complete](https://arxiv.org/abs/1605.05274).
 
 - Графовые базы данных. Поиск путей с ограничениями.
     - Maurizio Nolé and Carlo Sartiani. 2016. Regular Path Queries on Massive Graphs. In Proceedings of the 28th International Conference on Scientific and Statistical Database Management (SSDBM ’16). Association for Computing Machinery, New York, NY, USA, Article 13, 1–12. DOI:https://doi.org/10.1145/2949689.2949711
     - Jochem Kuijpers, George Fletcher, Nikolay Yakovets, and Tobias Lindaaker. 2019. An Experimental Study of Context-Free Path Query Evaluation Methods. In Proceedings of the 31st International Conference on Scientific and Statistical Database Management (SSDBM ’19). Association for Computing Machinery, New York, NY, USA, 121–132. DOI:https://doi.org/10.1145/3335783.3335791
     - [Jelle Hellings. Querying for Paths in Graphs using Context-Free Path Queries.](https://arxiv.org/abs/1502.02242)
-  
+
 - Биоинформатика. В основном это анализ геномных и белковых последовательностей.
     - [Witold Dyrka, Mateusz Pyzik, Francois Coste, and Hugo Talibart. Estimating probabilistic context-free grammars for proteins using contact map constraints.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6428041/)
     - [James WJ Anderson, Paula Tataru, Joe Staines, Jotun Hein, and Rune Lyngso. Evolving stochastic context-free grammars for RNA secondary structure prediction.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3464655/)
