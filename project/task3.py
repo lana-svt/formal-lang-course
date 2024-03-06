@@ -6,9 +6,8 @@ from pyformlang.finite_automaton import (
     State,
 )
 import numpy as np
-from scipy.sparse import dok_matrix, kron
-
-from project.automata import graph_to_nfa, regex_to_dfa
+from scipy.sparse import dok_matrix, kron, spmatrix, csr_matrix
+from math import log2, ceil
 
 
 def as_set(obj):
@@ -39,9 +38,9 @@ class FiniteAutomaton:
             self.m, self.start, self.final, self.mapping = obj, start, final, mapping
 
     def accepts(self, word) -> bool:
-        nfa = mat_to_nfa(self)
-        real_word = "".join(list(word))
-        return nfa.accepts(real_word)
+        nfa = matrix_to_nfa(self)
+        rword = "".join(list(word))
+        return nfa.accepts(rword)
 
     def is_empty(self) -> bool:
         return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
@@ -66,34 +65,26 @@ def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
 
 
-def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
+def matrix_to_nfa(matrix, start, final, mapping):
     nfa = NondeterministicFiniteAutomaton()
+    nfa.start = list(start)[0]
+    nfa.final = [f.state for f in final]
 
-    for label in automaton.m.keys():
-        m_size = automaton.m[label].shape[0]
-        for u in range(m_size):
-            for v in range(m_size):
-                if automaton.m[label][u, v]:
-                    nfa.add_transition(
-                        automaton.mapping_for(u), label, automaton.mapping_for(v)
-                    )
-
-    for s in automaton.start:
-        nfa.add_start_state(automaton.mapping_for(s))
-    for s in automaton.final:
-        nfa.add_final_state(automaton.mapping_for(s))
+    for label, mat in matrix.items():
+        for i, row in enumerate(mat):
+            for j, cell in enumerate(row):
+                if cell:
+                    nfa.add_transition(list(start)[0], label, mapping[i].state)
+                    nfa.add_transition(mapping[i].state, label, mapping[j].state)
 
     return nfa
 
 
-def transitive_closure(automaton: FiniteAutomaton):
-    if len(automaton.m.values()) == 0:
-        return dok_matrix((0, 0), dtype=bool)
-    adjacency = sum(automaton.m.values())
-    for _ in range(adjacency.shape[0]):
-        adjacency += adjacency @ adjacency
-    return adjacency
-
+def transitive_closure(mat: spmatrix) -> csr_matrix:
+    closure = csr_matrix(mat)
+    for _ in range(ceil(log2(mat.get_shape()[0]))):
+        closure += closure @ closure
+    return closure
 
 
 def intersect_automata(automaton1: FiniteAutomaton,
