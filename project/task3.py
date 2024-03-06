@@ -20,7 +20,7 @@ class FiniteAutomaton:
             self.m, self.start, self.final, self.mapping = obj, start, final, mapping
 
     def accepts(self, word) -> bool:
-        nfa = matrix_to_nfa(self)
+        nfa = matrix_to_nfa(self, self.start, self.final, self.mapping)
         real_word = "".join(list(word))
         return nfa.accepts(real_word)
 
