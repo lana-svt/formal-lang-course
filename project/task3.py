@@ -6,15 +6,16 @@ from pyformlang.finite_automaton import (
     State,
 )
 import numpy as np
-from scipy.sparse import dok_matrix, kron, spmatrix, csr_matrix
-from math import log2, ceil
+from scipy.sparse import dok_matrix, kron
+
+
 
 
 
 
 class FiniteAutomaton:
 
-    m = None
+    matrix = None
     start = None
     final = None
     mapping = None
@@ -23,34 +24,28 @@ class FiniteAutomaton:
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
             obj, NondeterministicFiniteAutomaton
         ):
-            mat = nfa_to_mat(obj)
-            self.m, self.start, self.final, self.mapping = (
-                mat.m,
+            mat = nfa_to_matrix(obj)
+            self.matrix, self.start, self.final, self.mapping = (
+                mat.matrix,
                 mat.start,
                 mat.final,
                 mat.mapping,
             )
         else:
-            self.m, self.start, self.final, self.mapping = obj, start, final, mapping
+            self.matrix, self.start, self.final, self.mapping = obj, start, final, mapping
 
     def accepts(self, word) -> bool:
-        nfa = mat_to_nfa(self)
-        real_word = "".join(list(word))
-        return nfa.accepts(real_word)
+        nfa = matrix_to_nfa(self)
+        rword = "".join(list(word))
+        return nfa.accepts(rword)
 
     def is_empty(self) -> bool:
-        return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
+        return len(self.matrix) == 0 or len(list(self.matrix.values())[0]) == 0
 
     def mapping_for(self, u) -> int:
         return self.mapping[State(u)]
 
-
-def as_set(obj):
-    if not isinstance(obj, set):
-        return {obj}
-    return obj
-
-def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
+def nfa_to_matrix(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     states = automaton.to_dict()
     len_states = len(automaton.states)
     mapping = {v: i for i, v in enumerate(automaton.states)}
@@ -60,22 +55,22 @@ def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
         m[label] = dok_matrix((len_states, len_states), dtype=bool)
         for u, edges in states.items():
             if label in edges:
-                for v in as_set(edges[label]):
+                for v in ({edges[label]} if isinstance(edges[label], set) else {edges[label]}):
                     m[label][mapping[u], mapping[v]] = True
 
     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
 
 
-def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
+def matrix_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
     nfa = NondeterministicFiniteAutomaton()
 
-    for label in automaton.m.keys():
-        m_size = automaton.m[label].shape[0]
+    for l in automaton.matrix.keys():
+        m_size = automaton.matrix[l].shape[0]
         for u in range(m_size):
             for v in range(m_size):
-                if automaton.m[label][u, v]:
+                if automaton.matrix[l][u, v]:
                     nfa.add_transition(
-                        automaton.mapping_for(u), label, automaton.mapping_for(v)
+                        automaton.mapping_for(u), l, automaton.mapping_for(v)
                     )
 
     for s in automaton.start:
@@ -85,21 +80,21 @@ def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
 
     return nfa
 
-def transitive_closure(automaton: FiniteAutomaton):
-    if len(automaton.m.values()) == 0:
-        return dok_matrix((0, 0), dtype=bool)
-    closure = sum(automaton.m.values())
-    for _ in range(closure .shape[0]):
-        closure += closure  @ closure
-    return closure
 
+def transitive_closure(automaton: FiniteAutomaton):
+    if len(automaton.matrix.values()) == 0:
+        return dok_matrix((0, 0), dtype=bool)
+    closure  = sum(automaton.matrix.values())
+    for _ in range(closure .shape[0]):
+        closure  += closure  @ closure
+    return closure
 
 def intersect_automata(automaton1: FiniteAutomaton,
                        automaton2: FiniteAutomaton) -> FiniteAutomaton:
     result = FiniteAutomaton()
 
-    matrices1 = automaton1.m
-    matrices2 = automaton2.m
+    matrices1 = automaton1.matrix
+    matrices2 = automaton2.matrix
 
     symbols = set(matrices1.keys()).intersection(matrices2.keys())
 
@@ -110,7 +105,7 @@ def intersect_automata(automaton1: FiniteAutomaton,
         intersection_matrix = np.logical_and(matrix1, matrix2)
         result_matrices[s] = intersection_matrix
 
-    result.m = result_matrices
+    result.matrix = result_matrices
 
     result.start = automaton1.start.intersection(automaton2.start)
     result.final = automaton1.final.intersection(automaton2.final)
