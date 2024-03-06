@@ -1,9 +1,9 @@
-from pyformlang.finite_automaton import FiniteAutomaton
+from pyformlang.finite_automaton import FiniteAutomaton as PyFormlangFA
 from pyformlang.finite_automaton import (
     DeterministicFiniteAutomaton,
     NondeterministicFiniteAutomaton, State
 )
-from scipy.sparse import kron, dok_matrix, spmatrix, csr_matrix
+from scipy.sparse import kron, csr_matrix
 from math import log2, ceil
 
 class FiniteAutomaton:
@@ -30,54 +30,38 @@ class FiniteAutomaton:
     def mapping_for(self, u) -> int:
         return self.mapping[State(u)]
 
-
-
-def transitive_closure(mat: spmatrix) -> csr_matrix:
+def transitive_closure(mat: csr_matrix) -> csr_matrix:
     closure = csr_matrix(mat)
     for _ in range(ceil(log2(mat.get_shape()[0]))):
-        closure += closure @ closure
+        closure += closure.dot(closure)
     return closure
 
+def nfa_to_matrix(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
+    states = automaton.to_dict()
+    len_states = len(automaton.states)
+    mapping = {v: i for i, v in enumerate(automaton.states)}
+    m = dict()
 
-# def nfa_to_matrix(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
-#     states = automaton.to_dict()
-#     len_states = len(automaton.states)
-#     mapping = {v: i for i, v in enumerate(automaton.states)}
-#     m = dict()
-#
-#     for label in automaton.symbols:
-#         matrix = [[False] * len_states for _ in range(len_states)]
-#         for u, edges in states.items():
-#             if label in edges:
-#                 for v in (edges[label] if isinstance(edges[label], set) else {edges[label]}):
-#                     matrix[mapping[u]][mapping[v]] = True
-#         m[label] = matrix
-#
-#     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
+    for label in automaton.symbols:
+        matrix = [[False] * len_states for _ in range(len_states)]
+        for u, edges in states.items():
+            if label in edges:
+                for v in (edges[label] if isinstance(edges[label], set) else {edges[label]}):
+                    matrix[mapping[u]][mapping[v]] = True
+        m[label] = matrix
 
-def matrix_to_nfa(matrix, start, final, mapping):
-    nfa = NondeterministicFiniteAutomaton()
-    nfa.add_start_state(start)
-    for state in final:
-        nfa.add_final_state(state)
-    for label, mat in matrix.items():
-        for i, row in enumerate(mat):
-            for j, cell in enumerate(row):
-                if cell:
-                    nfa.add_transition(mapping[i], label, mapping[j])
-    return nfa
-
+    return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
 
 def matrix_to_nfa(matrix, start, final, mapping):
     nfa = NondeterministicFiniteAutomaton()
-    nfa.start = start.state
+    nfa.start = list(start)[0]
     nfa.final = [f.state for f in final]
 
     for label, mat in matrix.items():
         for i, row in enumerate(mat):
             for j, cell in enumerate(row):
                 if cell:
-                    nfa.add_transition(start.state, label, mapping[i].state)
+                    nfa.add_transition(list(start)[0], label, mapping[i].state)
                     nfa.add_transition(mapping[i].state, label, mapping[j].state)
 
     return nfa
@@ -105,4 +89,3 @@ def intersect_automata(
                 final.add(combined_state)
 
     return FiniteAutomaton(obj=m, start=start, final=final, mapping=mapping)
-
