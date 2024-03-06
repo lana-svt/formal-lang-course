@@ -47,13 +47,12 @@ def nfa_to_matrix(automaton):
     for label in automaton.symbols:
         matrix = [[False] * len_states for _ in range(len_states)]
         for u in automaton.states:
-            transitions = automaton.get_transitions(u, label, [])
-            for v in transitions:
+            transitions = automaton.get_out_transitions(u)
+            for v in transitions[label]:
                 matrix[mapping[u]][mapping[v]] = True
         m[label] = matrix
 
     return m, State(automaton.start), set(map(State, automaton.final)), mapping
-
 
 def matrix_to_nfa(matrix, start, final, mapping):
     nfa = NondeterministicFiniteAutomaton()
