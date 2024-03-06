@@ -1,85 +1,102 @@
-from typing import List, Tuple, Set, Iterable, Dict, Any
-import networkx as nx
-from networkx.classes.reportviews import NodeView
-import numpy as np
-from pyformlang.finite_automaton import FiniteAutomaton, State, Symbol
+from pyformlang.finite_automaton import FiniteAutomaton
 from pyformlang.finite_automaton import (
     DeterministicFiniteAutomaton,
     NondeterministicFiniteAutomaton,
 )
-from scipy.sparse import kron, dok_matrix, coo_matrix, spmatrix, csr_matrix
-from task2 import regex_to_dfa, graph_to_nfa
+from scipy.sparse import kron, dok_matrix, spmatrix, csr_matrix
 from math import log2, ceil
 
 
 class FiniteAutomaton:
-    def __init__(self, transitions: dict, start_states: set, final_states: set):
-        self.transitions = transitions
-        self.start_states = start_states
-        self.final_states = final_states
+    def __init__(self, obj=None, start=None, final=None, mapping=None):
+        if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
+            self.m, self.start, self.final, self.mapping = nfa_to_mat(obj)
+        else:
+            self.m = obj if obj is not None else []
+            self.start = start if start is not None else set()
+            self.final = final if final is not None else set()
+            self.mapping = mapping if mapping is not None else {}
 
+    def accepts(self, word):
+        nfa = mat_to_nfa(self)
+        return nfa.accepts(word)
 
-    def to_sparse_matrix(self):
-        states = list(self.transitions.keys())
-        n_states = len(states)
-        symbols = set()
-        for state in self.transitions.values():
-            symbols.update(state.keys())
-        n_symbols = len(symbols)
-
-        matrix = dok_matrix((n_states, n_symbols), dtype=bool)
-        symbol_mapping = {symbol: idx for idx, symbol in enumerate(symbols)}
-
-        for row_idx, state in enumerate(states):
-            for symbol, next_state in self.transitions[state].items():
-                col_idx = symbol_mapping[symbol]
-                matrix[row_idx, col_idx] = True
-
-        return matrix
-
-    def accepts(self, word: Iterable[Symbol]) -> bool:
-        current_states = set(self.start_states)
-        for symbol in word:
-            next_states = set()
-            for state in current_states:
-                transitions = self.transitions.get(state, {}).get(symbol, set())
-                next_states.update(transitions)
-            current_states = next_states
-        return bool(current_states.intersection(self.final_states))
-
-    def is_empty(self) -> bool:
-        transitive_closure = self._transitive_closure()
-
-        for start_state in self.start_states:
-            for final_state in self.final_states:
-                if transitive_closure[start_state, final_state]:
-                    return False
+    def is_empty(self):
+        if len(self.m) == 0:
+            return True
+        for state in self.m:
+            if state:
+                return False
         return True
 
-    def transitive_closure(mat: spmatrix) -> csr_matrix:
-        closure = csr_matrix(mat)
+    def mapping_for(self, u):
+        return self.mapping.get(u, {})
 
-        for _ in range(ceil(log2(mat.get_shape()[0]))):
-            closure += closure @ closure
 
-        return closure
+def transitive_closure(mat: spmatrix) -> csr_matrix:
+    closure = csr_matrix(mat)
+    for _ in range(ceil(log2(mat.get_shape()[0]))):
+        closure += closure @ closure
+    return closure
 
-def from_dfa(cls, dfa: DeterministicFiniteAutomaton):
-    transitions = {}
-    for state in dfa.states:
-        transitions[state] = {}
-        for symbol in dfa.symbols:
-            next_state = dfa.transitions.get(state, {}).get(symbol)
-            if next_state is not None:
-                transitions[state][symbol] = next_state
-    return cls(transitions, dfa.start_state, dfa.final_states)
 
-def from_nfa(cls, nfa: NondeterministicFiniteAutomaton):
-    transitions = {}
-    for state in nfa.states:
-        transitions[state] = {}
-        for symbol in nfa.symbols:
-            next_states = nfa.transitions.get(state, {}).get(symbol, set())
-            for next_state in next_states:
-                transitions[state].setdefault(symbol, set()).add(next_state)
-    return cls(transitions, nfa.start_states, nfa.final_states)
+def nfa_to_mat(automaton):
+    #states = {}
+    len_states = len(automaton.states)
+    mapping = {state: index for index, state in enumerate(automaton.states)}
+    m = {}
+
+    for symbol in automaton.symbols:
+        m[symbol] = dok_matrix((len_states, len_states), dtype=bool)
+
+    for u, edges in automaton.states.items():
+        for label, targets in edges.items():
+            for v in targets:
+                m[label][mapping[u], mapping[v]] = True
+
+    fa = FiniteAutomaton(m, {mapping[state] for state in automaton.start_states},
+                         {mapping[state] for state in automaton.accept_states}, mapping)
+
+    return fa
+
+def mat_to_nfa(automaton):
+    nfa = NondeterministicFiniteAutomaton()
+
+    for label in automaton.m.keys():
+        m_size = automaton.m[label].shape[0]
+
+        for u in range(m_size):
+            for v in range(m_size):
+                if automaton.m[label][u, v]:
+                    nfa.add_transition(u, label, v)
+
+    for start_state in automaton.start:
+        nfa.add_start_state(start_state)
+
+    for final_state in automaton.final:
+        nfa.add_final_state(final_state)
+
+    return nfa
+
+def intersect_automata(automaton1, automaton2):
+    labels = set(automaton1.m.keys()) & set(automaton2.m.keys())
+
+    m = {}
+    start = set()
+    final = set()
+    mapping = {}
+
+    for label in labels:
+        m[label] = kron(automaton1.m[label], automaton2.m[label])
+
+    for u, u_index in automaton1.mapping.items():
+        for v, v_index in automaton2.mapping.items():
+            k = len(mapping)
+            mapping[(u, v)] = k
+
+            if u in automaton1.start and v in automaton2.start:
+                start.add(k)
+            if u in automaton1.final and v in automaton2.final:
+                final.add(k)
+
+    return FiniteAutomaton(m, start, final, mapping)
