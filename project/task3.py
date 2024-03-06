@@ -92,7 +92,7 @@ def intersect_automata(automaton1, automaton2):
     for u, u_index in automaton1.mapping.items():
         for v, v_index in automaton2.mapping.items():
             k = len(mapping)
-            mapping[(u, v)] = k
+            mapping[(u_index, v_index)] = k
 
             if u in automaton1.start and v in automaton2.start:
                 start.add(k)
