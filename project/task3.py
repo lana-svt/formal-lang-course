@@ -6,30 +6,28 @@ from pyformlang.finite_automaton import (
 from scipy.sparse import kron, dok_matrix, spmatrix, csr_matrix
 from math import log2, ceil
 
-
 class FiniteAutomaton:
-    def __init__(self, obj=None, start=None, final=None, mapping=None):
+    def __init__(self, obj=None, start=set(), final=set(), mapping=dict()):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
-            self.matrix, self.start, self.final, self.mapping = nfa_to_matrix(obj)
+            mat = nfa_to_matrix(obj)
+            self.m, self.start, self.final, self.mapping = (
+                mat.m,
+                mat.start,
+                mat.final,
+                mat.mapping,
+            )
         else:
-            self.matrix = obj if obj is not None else []
-            self.start = start if start is not None else set()
-            self.final = final if final is not None else set()
-            self.mapping = mapping if mapping is not None else {}
+            self.m, self.start, self.final, self.mapping = obj, start, final, mapping
 
-    def accepts(self, word):
+    def accepts(self, word) -> bool:
         nfa = matrix_to_nfa(self)
-        return nfa.accepts(word)
+        real_word = "".join(list(word))
+        return nfa.accepts(real_word)
 
-    def is_empty(self):
-        if len(self.matrix) == 0:
-            return True
-        for state in self.matrix:
-            if state:
-                return False
-        return True
+    def is_empty(self) -> bool:
+        return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
 
-    def mapping_for(self, u):
+    def mapping_for(self, u) -> int:
         return self.mapping[State(u)]
 
 
@@ -70,15 +68,17 @@ def matrix_to_nfa(matrix, start, final, mapping):
 
     return nfa
 
-def intersect_automata(automaton1, automaton2):
-    common_labels = automaton1.matrix.keys() & automaton2.matrix.keys()
+def intersect_automata(
+    automaton1: FiniteAutomaton, automaton2: FiniteAutomaton
+) -> FiniteAutomaton:
+    common_labels = automaton1.m.keys() & automaton2.m.keys()
     m = {}
     start = set()
     final = set()
     mapping = {}
 
     for label in common_labels:
-        m[label] = kron(automaton1.matrix[label], automaton2.matrix[label])
+        m[label] = kron(automaton1.m[label], automaton2.m[label])
 
     for state1, idx1 in automaton1.mapping.items():
         for state2, idx2 in automaton2.mapping.items():
