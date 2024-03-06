@@ -24,7 +24,7 @@ class FiniteAutomaton:
 
     def accepts(self, word):
         nfa = mat_to_nfa(self)
-        return nfa.accepts(word)
+        return nfa.accepts("".join(list(word)))
 
     def is_empty(self):
         if len(self.m) == 0:
@@ -35,7 +35,7 @@ class FiniteAutomaton:
         return True
 
     def mapping_for(self, u):
-        return self.mapping.get(u, {})
+        return self.mapping[State(u)]
 
 def as_set(obj):
     if not isinstance(obj, set):
