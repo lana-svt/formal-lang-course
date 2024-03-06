@@ -10,44 +10,37 @@ from scipy.sparse import dok_matrix, kron, spmatrix, csr_matrix
 from math import log2, ceil
 
 
+
+
+class FiniteAutomaton:
+    def __init__(self, obj=None, start=None, final=None, mapping=None):
+        if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(obj, NondeterministicFiniteAutomaton):
+            self.m, self.start, self.final, self.mapping = nfa_to_mat(obj)
+        else:
+            self.m = obj if obj is not None else []
+            self.start = start if start is not None else set()
+            self.final = final if final is not None else set()
+            self.mapping = mapping if mapping is not None else {}
+
+    def accepts(self, word):
+        nfa = mat_to_nfa(self)
+        return nfa.accepts(word)
+
+    def is_empty(self):
+        if len(self.m) == 0:
+            return True
+        for state in self.m:
+            if state:
+                return False
+        return True
+
+    def mapping_for(self, u):
+        return self.mapping.get(u, {})
+
 def as_set(obj):
     if not isinstance(obj, set):
         return {obj}
     return obj
-
-
-class FiniteAutomaton:
-
-    m = None
-    start = None
-    final = None
-    mapping = None
-
-    def __init__(self, obj: any, start=set(), final=set(), mapping=dict()):
-        if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
-            obj, NondeterministicFiniteAutomaton
-        ):
-            mat = nfa_to_mat(obj)
-            self.m, self.start, self.final, self.mapping = (
-                mat.m,
-                mat.start,
-                mat.final,
-                mat.mapping,
-            )
-        else:
-            self.m, self.start, self.final, self.mapping = obj, start, final, mapping
-
-    def accepts(self, word) -> bool:
-        nfa = matrix_to_nfa(self)
-        rword = "".join(list(word))
-        return nfa.accepts(rword)
-
-    def is_empty(self) -> bool:
-        return len(self.m) == 0 or len(list(self.m.values())[0]) == 0
-
-    def mapping_for(self, u) -> int:
-        return self.mapping[State(u)]
-
 
 def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     states = automaton.to_dict()
@@ -65,22 +58,25 @@ def nfa_to_mat(automaton: NondeterministicFiniteAutomaton) -> FiniteAutomaton:
     return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
 
 
-def matrix_to_nfa(automaton):
+def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
     nfa = NondeterministicFiniteAutomaton()
 
     for label in automaton.m.keys():
-        for source, targets in enumerate(automaton.m[label]):
-            for target, value in enumerate(targets):
-                if value:
-                    nfa.add_transition(automaton.mapping_for(source), label, automaton.mapping_for(target))
+        m_size = automaton.m[label].shape[0]
+        for u in range(m_size):
+            for v in range(m_size):
+                if automaton.m[label][u, v]:
+                    nfa.add_transition(
+                        automaton.mapping_for(u), label, automaton.mapping_for(v)
+                    )
 
-    for state in automaton.start:
-        nfa.add_start_state(automaton.mapping_for(state))
-
-    for state in automaton.final:
-        nfa.add_final_state(automaton.mapping_for(state))
+    for s in automaton.start:
+        nfa.add_start_state(automaton.mapping_for(s))
+    for s in automaton.final:
+        nfa.add_final_state(automaton.mapping_for(s))
 
     return nfa
+
 
 
 
