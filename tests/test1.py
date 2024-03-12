@@ -1,6 +1,7 @@
+import pytest
 import project.task1 as pg
 from tempfile import NamedTemporaryFile
-import pytest
+
 
 def test_1_graph_info():
     gwc_i = pg.graph_info(pg.load_graph("wc"))
