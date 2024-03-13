@@ -30,8 +30,8 @@ def reachability_with_constraints(
     )
     for source, target in source_target_pairs:
         if (
-                source in intersection_start_indices
-                and target in intersection_final_indices
+            source in intersection_start_indices
+            and target in intersection_final_indices
         ):
             result_dict[state_mapping[source // len(constraints_fa.mapping)]].add(
                 state_mapping[target // len(constraints_fa.mapping)]
