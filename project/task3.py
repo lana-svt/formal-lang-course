@@ -1,11 +1,11 @@
 from pyformlang.finite_automaton import (
     DeterministicFiniteAutomaton,
     NondeterministicFiniteAutomaton,
-    State
+    State,
 )
 from scipy.sparse import dok_matrix, kron
 from itertools import product
-from task2 import graph_to_nfa, regex_to_dfa
+from project.task2 import graph_to_nfa, regex_to_dfa
 from networkx import MultiDiGraph
 from typing import List, Tuple, Set
 
@@ -13,7 +13,7 @@ from typing import List, Tuple, Set
 class FiniteAutomaton:
     def __init__(self, obj=None, start=None, final=None, mapping=None):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
-                obj, NondeterministicFiniteAutomaton
+            obj, NondeterministicFiniteAutomaton
         ):
             mat = nfa_to_matrix(obj)
             self.m, self.start, self.final, self.mapping = (
@@ -81,14 +81,14 @@ def matrix_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton
 def transitive_closure(automaton: FiniteAutomaton):
     if len(automaton.m.values()) == 0:
         return dok_matrix((0, 0), dtype=bool)
-    adjacency = sum(automaton.m.values())
-    for _ in range(adjacency.shape[0]):
-        adjacency += adjacency @ adjacency
-    return adjacency
+    closure = sum(automaton.m.values())
+    for _ in range(closure.shape[0]):
+        closure += closure @ closure
+    return closure
 
 
 def intersect_automata(
-        automaton1: FiniteAutomaton, automaton2: FiniteAutomaton
+    automaton1: FiniteAutomaton, automaton2: FiniteAutomaton
 ) -> FiniteAutomaton:
     m = {
         label: kron(automaton1.m[label], automaton2.m[label], "csr")
@@ -112,7 +112,7 @@ def intersect_automata(
 
 
 def paths_ends(
-        graph: MultiDiGraph, start_nodes: Set[int], final_nodes: Set[int], regex: str
+    graph: MultiDiGraph, start_nodes: Set[int], final_nodes: Set[int], regex: str
 ) -> List[Tuple[object, object]]:
     dfa = nfa_to_matrix(regex_to_dfa(regex))
     nfa = nfa_to_matrix(graph_to_nfa(graph, start_nodes, final_nodes))
@@ -125,8 +125,10 @@ def paths_ends(
     for i, v in nfa.mapping.items():
         mapping[v] = i
 
-    result = [(mapping[u // reg_size], mapping[v // reg_size])
+    result = [
+        (mapping[u // reg_size], mapping[v // reg_size])
               for u, v in zip(*closure.nonzero())
-              if u in intersection.start and v in intersection.final]
+              if u in intersection.start and v in intersection.final
+    ]
 
     return result
