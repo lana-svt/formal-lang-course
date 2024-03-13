@@ -1,24 +1,30 @@
-import numpy as np
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import breadth_first_order
-from project.task3 import FiniteAutomaton
+from task3 import FiniteAutomaton, transitive_closure
+from itertools import product
+from pyformlang.finite_automaton import State
+from scipy.sparse import kron
 
 
-def reachability_with_constraints(
-    fa: FiniteAutomaton, constraints_fa: FiniteAutomaton
-) -> dict[int, set[int]]:
-    states = len(fa.mapping)
-    closure_matrix = np.random.randint(0, 2, size=(states, states)).astype(bool)
-    achiev_states = {}
+def reachability_with_constraints(fa: FiniteAutomaton, constraints_fa: FiniteAutomaton) -> dict[int, set[int]]:
+    intersection_m = {
+        label: kron(fa.m[label], constraints_fa.m[label], "csr")
+        for label in fa.m.keys() & constraints_fa.m.keys()
+    }
+    closure_m = transitive_closure(FiniteAutomaton(intersection_m))
+    intersection_start_indices = {
+        len(constraints_fa.mapping) * fa.mapping[state] + constraints_fa.mapping[State(label)]
+        for state, label in product(fa.start, constraints_fa.start)
+    }
+    intersection_final_indices = {
+        len(constraints_fa.mapping) * fa.mapping[state] + constraints_fa.mapping[State(label)]
+        for state, label in product(fa.final, constraints_fa.final)
+    }
 
-    for start in range(states):
-        achiev = set([start])
-        x, pred = breadth_first_order(
-            csr_matrix(np.logical_xor(closure_matrix, closure_matrix.T)),
-            i_start=start,
-            return_predecessors=True,
-        )
-        achiev.update({p for p, q in enumerate(pred) if p != start and q != -9999})
-        achiev_states[start] = achiev
+    state_mapping = {v: i for i, v in enumerate(fa.mapping)}
+    result_dict = {state_mapping[index]: set() for index in fa.start}
+    source_target_pairs = ((source, target) for source, target in zip(*closure_m.nonzero()))
+    for source, target in source_target_pairs:
+        if source in intersection_start_indices and target in intersection_final_indices:
+            result_dict[state_mapping[source // len(constraints_fa.mapping)]].add(
+                state_mapping[target // len(constraints_fa.mapping)])
 
-    return achiev_states
+    return result_dict
