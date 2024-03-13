@@ -1,4 +1,4 @@
-from task3 import FiniteAutomaton, transitive_closure
+from project.task3 import FiniteAutomaton, transitive_closure
 from itertools import product
 from pyformlang.finite_automaton import State
 from scipy.sparse import kron
