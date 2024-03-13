@@ -16,7 +16,7 @@ def reachability_with_constraints(
         x, pred = breadth_first_order(
             csr_matrix(np.logical_xor(closure_matrix, closure_matrix.T)),
             i_start=start,
-            return_predecessors=True
+            return_predecessors=True,
         )
         achiev.update({p for p, q in enumerate(pred) if p != start and q != -9999})
         achiev_states[start] = achiev
