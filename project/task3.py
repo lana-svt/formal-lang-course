@@ -127,8 +127,8 @@ def paths_ends(
 
     result = [
         (mapping[u // reg_size], mapping[v // reg_size])
-              for u, v in zip(*closure.nonzero())
-              if u in intersection.start and v in intersection.final
+        for u, v in zip(*closure.nonzero())
+        if u in intersection.start and v in intersection.final
     ]
 
     return result
