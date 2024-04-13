@@ -19,7 +19,6 @@ def cfg_to_weak_normal_form(cfg: pyformlang.cfg.CFG) -> pyformlang.cfg.CFG:
 def extract(g):
     k_1, k_2, k_3 = {}, set(), {}
 
-
     for p in g.productions:
         if len(p.body) == 1 and isinstance(p.body[0], Terminal):
             k_1.setdefault(p.head, set()).add(p.body[0])
