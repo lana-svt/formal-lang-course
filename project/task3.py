@@ -11,19 +11,23 @@ from networkx import MultiDiGraph
 class FiniteAutomaton:
 
     def __init__(
-            self,
-            obj: any,
-            start_set=set(),
-            final_set=set(),
-            mapping_dict=dict(),
-            matrix_class=dok_matrix,
+        self,
+        obj: any,
+        start_set=set(),
+        final_set=set(),
+        mapping_dict=dict(),
+        matrix_class=dok_matrix,
     ):
         self.m, self.start, self.final, self.mapping, self.g = (
-            None, None, None, None, True
+            None,
+            None,
+            None,
+            None,
+            True
         )
 
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
-                obj, NondeterministicFiniteAutomaton
+            obj, NondeterministicFiniteAutomaton
         ):
             mat = nfa_to_matrix(obj, matrix_class=matrix_class)
             self.m, self.start, self.final, self.mapping = (
@@ -33,7 +37,12 @@ class FiniteAutomaton:
                 mat.mapping,
             )
         else:
-            self.m, self.start, self.final, self.mapping = obj, start_set, final_set, mapping_dict
+            self.m, self.start, self.final, self.mapping = (
+                obj,
+                start_set,
+                final_set,
+                mapping_dict
+            )
 
     def accepts(self, word) -> bool:
         nfa = matrix_to_nfa(self)
@@ -63,7 +72,7 @@ class FiniteAutomaton:
 
 
 def nfa_to_matrix(
-        automaton: NondeterministicFiniteAutomaton, matrix_class=dok_matrix
+    automaton: NondeterministicFiniteAutomaton, matrix_class=dok_matrix
 ) -> FiniteAutomaton:
     states = automaton.to_dict()
     len_states = len(automaton.states)
@@ -112,37 +121,55 @@ def transitive_closure(automaton: FiniteAutomaton):
 
 
 def intersect_automata(
-        automaton1: FiniteAutomaton,
-        automaton2: FiniteAutomaton,
-        matrix_class_id="csr",
-        g=True,
+    automaton1: FiniteAutomaton,
+    automaton2: FiniteAutomaton,
+    matrix_class_id="csr",
+    g=True,
 ) -> FiniteAutomaton:
     automaton1.g = automaton2.g = not g
     labels = automaton1.labels() & automaton2.labels()
-    m = {label: kron(automaton1.m[label], automaton2.m[label], matrix_class_id) for label in labels}
-    mapping = {State(len(automaton2.mapping) * i + j): len(automaton2.mapping) * i + j
-               for u, i in automaton1.mapping.items() for v, j in automaton2.mapping.items()}
+    m = {
+        label: kron(automaton1.m[label], automaton2.m[label], matrix_class_id)
+        for label in labels
+    }
+    mapping = {
+        State(len(automaton2.mapping) * i + j): len(automaton2.mapping) * i + j
+        for u, i in automaton1.mapping.items()
+        for v, j in automaton2.mapping.items()
+    }
 
-    start = {State(k) for k in mapping.values() if any(u in automaton1.start and v in automaton2.start
-                for u, i in automaton1.mapping.items()
-                for v, j in automaton2.mapping.items()
-                if len(automaton2.mapping) * i + j == k)}
+    start = {
+        State(k)
+        for k in mapping.values()
+        if any(
+            u in automaton1.start and v in automaton2.start
+            for u, i in automaton1.mapping.items()
+            for v, j in automaton2.mapping.items()
+            if len(automaton2.mapping) * i + j == k
+        )
+    }
 
-    final = {State(k) for k in mapping.values() if any(u in automaton1.final and v in automaton2.final
-                for u, i in automaton1.mapping.items()
-                for v, j in automaton2.mapping.items()
-                if len(automaton2.mapping) * i + j == k)}
+    final = {
+        State(k)
+        for k in mapping.values()
+        if any(
+            u in automaton1.final and v in automaton2.final
+            for u, i in automaton1.mapping.items()
+            for v, j in automaton2.mapping.items()
+            if len(automaton2.mapping) * i + j == k
+        )
+    }
 
     return FiniteAutomaton(m, start, final, mapping)
 
 
 def paths_ends(
-        graph: MultiDiGraph,
-        start_nodes: set[int],
-        final_nodes: set[int],
-        regex: str,
-        matrix_class=dok_matrix,
-        matrix_class_id="csr",
+    graph: MultiDiGraph,
+    start_nodes: set[int],
+    final_nodes: set[int],
+    regex: str,
+    matrix_class=dok_matrix,
+    matrix_class_id="csr",
 ) -> list[tuple[object, object]]:
     graph_nfa = nfa_to_matrix(
         graph_to_nfa(graph, start_nodes, final_nodes), matrix_class=matrix_class
@@ -157,6 +184,8 @@ def paths_ends(
     result = []
     for u, v in zip(*closure.nonzero()):
         if u in intersection.start and v in intersection.final:
-            result.append((mapping[u // regex_dfa.size()], mapping[v // regex_dfa.size()]))
+            result.append(
+                (mapping[u // regex_dfa.size()], mapping[v // regex_dfa.size()])
+            )
 
     return result

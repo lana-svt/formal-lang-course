@@ -1,5 +1,5 @@
 from networkx import MultiDiGraph
-from task3 import paths_ends
+from project.task3 import paths_ends
 
 
 def test_paths_ends_empty_graph():

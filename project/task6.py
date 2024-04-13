@@ -66,10 +66,10 @@ def filter_results(r, start_nodes, final_nodes, cfg):
 
 
 def cfpq_with_hellings(
-        cfg: CFG,
-        graph: nx.DiGraph,
-        start_nodes: Set[int] = None,
-        final_nodes: Set[int] = None,
+    cfg: CFG,
+    graph: nx.DiGraph,
+    start_nodes: Set[int] = None,
+    final_nodes: Set[int] = None,
 ) -> Set[Tuple[int, int]]:
     if start_nodes is None:
         start_nodes = graph.nodes
