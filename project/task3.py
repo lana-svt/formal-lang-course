@@ -4,7 +4,7 @@ from pyformlang.finite_automaton import (
     State,
 )
 from scipy.sparse import dok_matrix, kron
-from task2 import graph_to_nfa, regex_to_dfa
+from project.task2 import graph_to_nfa, regex_to_dfa
 from networkx import MultiDiGraph
 
 
@@ -23,7 +23,7 @@ class FiniteAutomaton:
             None,
             None,
             None,
-            True
+            True,
         )
 
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
@@ -41,7 +41,7 @@ class FiniteAutomaton:
                 obj,
                 start_set,
                 final_set,
-                mapping_dict
+                mapping_dict,
             )
 
     def accepts(self, word) -> bool:
