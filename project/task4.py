@@ -11,7 +11,9 @@ def reachability_with_constraints(
         label: kron(fa.m[label], constraints_fa.m[label], "csr")
         for label in fa.m.keys() & constraints_fa.m.keys()
     }
+
     closure_m = transitive_closure(FiniteAutomaton(intersection_m))
+
     intersection_start_indices = {
         len(constraints_fa.mapping) * fa.mapping[state]
         + constraints_fa.mapping[State(label)]
@@ -25,13 +27,13 @@ def reachability_with_constraints(
 
     state_mapping = {v: i for i, v in enumerate(fa.mapping)}
     result_dict = {state_mapping[index]: set() for index in fa.start}
-    source_target_pairs = (
-        (source, target) for source, target in zip(*closure_m.nonzero())
-    )
-    for source, target in source_target_pairs:
+
+    for source, target in zip(*closure_m.nonzero()):
+        source_label = closure_m[source, target]
         if (
             source in intersection_start_indices
             and target in intersection_final_indices
+            and source_label in intersection_m
         ):
             result_dict[state_mapping[source // len(constraints_fa.mapping)]].add(
                 state_mapping[target // len(constraints_fa.mapping)]
