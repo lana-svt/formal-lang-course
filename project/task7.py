@@ -2,7 +2,8 @@ from scipy.sparse import lil_matrix
 from pyformlang.cfg import CFG, Terminal
 import networkx as nx
 from typing import Set, Tuple
-from task6 import cfg_to_weak_normal_form
+from project.task6 import cfg_to_weak_normal_form
+
 
 def cfpq_with_matrix(
     cfg: CFG,
@@ -15,12 +16,15 @@ def cfpq_with_matrix(
     variable_indices = {var: idx for idx, var in enumerate(nonterminals)}
     num_vertices = graph.number_of_nodes()
 
-    adj_matrices = {var: lil_matrix((num_vertices, num_vertices), dtype=bool) for var in nonterminals}
+    adj_matrices = {
+        var: lil_matrix((num_vertices, num_vertices), dtype=bool)
+        for var in nonterminals
+    }
 
     for edge in graph.edges(data=True):
         for production in cfg.productions:
             if len(production.body) == 1 and isinstance(production.body[0], Terminal):
-                if str(edge[2].get('label', '')) == str(production.body[0]):
+                if str(edge[2].get("label", "")) == str(production.body[0]):
                     adj_matrices[production.head][edge[0], edge[1]] = True
 
     changes = True
@@ -41,6 +45,8 @@ def cfpq_with_matrix(
         if variable == cfg.start_symbol:
             matrix = matrix.tocoo()
             for i, j in zip(matrix.row, matrix.col):
-                if (start_nodes is None or i in start_nodes) and (final_nodes is None or j in final_nodes):
+                if (start_nodes is None or i in start_nodes) and (
+                    final_nodes is None or j in final_nodes
+                ):
                     result.add((i, j))
     return result
