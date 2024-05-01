@@ -19,8 +19,10 @@ def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
     productions_dict = {}
 
     for production_item in cfg.productions:
-        body_regex = Epsilon().to_text() if len(
-            production_item.body) == 0 else " ".join(var.value for var in production_item.body
+        body_regex = (
+            Epsilon().to_text()
+            if len(production_item.body) == 0
+            else " ".join(var.value for var in production_item.body)
         )
         head_symbol = Symbol(production_item.head)
         if head_symbol not in productions_dict:
@@ -37,7 +39,9 @@ def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
             regex.to_epsilon_nfa().to_deterministic(), Symbol(symbol)
         )
 
-    return RecursiveAutomaton(set(result_dict.keys()), Symbol("S"), set(result_dict.values()))
+    return RecursiveAutomaton(
+        set(result_dict.keys()), Symbol("S"), set(result_dict.values())
+    )
 
 
 
@@ -67,7 +71,9 @@ def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
             regex.to_epsilon_nfa().to_deterministic(), Symbol(symbol)
         )
 
-    return RecursiveAutomaton(set(result_dict.keys()), Symbol("S"), set(result_dict.values()))
+    return RecursiveAutomaton(
+        set(result_dict.keys()), Symbol("S"), set(result_dict.values())
+    )
 
 
 def cfpq_with_tensor(
@@ -137,9 +143,9 @@ def rsm_to_matrix(rsm: RecursiveAutomaton) -> tuple:
                 label = symbol.value
                 if label not in m:
                     m[label] = dok_matrix(
-                    (len(all_states), len(all_states)), dtype=bool
+                        (len(all_states), len(all_states)), dtype=bool
                     )
-                for target in ({dst} if not isinstance(dst, set) else dst):
+                for target in {dst} if not isinstance(dst, set) else dst:
                     m[label][
                         mapping[State((var, src.value))],
                         mapping[State((var, target.value))],
