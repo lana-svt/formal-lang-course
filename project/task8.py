@@ -34,9 +34,7 @@ def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
             regex.to_epsilon_nfa().to_deterministic(), Symbol(var)
         )
 
-    return RecursiveAutomaton(
-        set(result.keys()), Symbol("S"), set(result.values())
-    )
+    return RecursiveAutomaton(set(result.keys()), Symbol("S"), set(result.values()))
 
 
 def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
@@ -62,18 +60,16 @@ def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
             Regex(regex).to_epsilon_nfa().to_deterministic(), Symbol(var)
         )
 
-    return RecursiveAutomaton(
-        set(result.keys()), Symbol("S"), set(result.values())
-    )
+    return RecursiveAutomaton(set(result.keys()), Symbol("S"), set(result.values()))
 
 
 def cfpq_with_tensor(
-        rsm: RecursiveAutomaton,
-        graph: nx.MultiDiGraph,
-        final_nodes: set[int] = None,
-        start_nodes: set[int] = None,
+    rsm: RecursiveAutomaton,
+    graph: nx.MultiDiGraph,
+    final_nodes: set[int] = None,
+    start_nodes: set[int] = None,
 ) -> set[tuple[int, int]]:
-    rsm_mat, _ = rsm_to_mat_with_epsilons(rsm)
+    rsm_mat, _ = rsm_to_matrix(rsm)
     graph_mat = nfa_to_matrix(graph_to_nfa(graph, start_nodes, final_nodes))
 
     num_states = graph_mat.size()
@@ -81,9 +77,7 @@ def cfpq_with_tensor(
     last_nnz: int = 0
 
     while True:
-        closure = transitive_closure(
-            intersect_automata(rsm_mat, graph_mat)
-        ).nonzero()
+        closure = transitive_closure(intersect_automata(rsm_mat, graph_mat)).nonzero()
         closure = list(zip(*closure))
 
         nnz_count = len(closure)
@@ -104,15 +98,15 @@ def cfpq_with_tensor(
     result: set[tuple[int, int]] = set()
     for _, m in graph_mat.m.items():
         for i, j in zip(*m.nonzero()):
-            if graph_mat.indexes_dict()[i] in rsm_mat.start and graph_mat.indexes_dict()[j] in rsm_mat.final:
+            if (
+                graph_mat.indexes_dict()[i] in rsm_mat.start
+                and graph_mat.indexes_dict()[j] in rsm_mat.final
+            ):
                 result.add((graph_mat.indexes_dict()[i], graph_mat.indexes_dict()[j]))
 
     return result
 
-
-def rsm_to_mat_with_epsilons(
-        rsm: RecursiveAutomaton,
-) -> (FiniteAutomaton, set[Epsilon]):
+def rsm_to_matrix(rsm: RecursiveAutomaton) -> tuple:
     all_states = set()
     start_states = set()
     final_states = set()
@@ -127,24 +121,17 @@ def rsm_to_mat_with_epsilons(
             if state in p.dfa.final_states:
                 final_states.add(s)
 
-    mapping = dict()
-    for i, v in enumerate(sorted(all_states, key=lambda x: x.value[1])):
-        mapping[v] = i
+    mapping = {v: i for i, v in enumerate(sorted(all_states, key=lambda x: x.value[1]))}
 
-    def to_set(o):
-        if not isinstance(o, set):
-            return {o}
-        return o
+    m = {}
 
-    m = dict()
-    states_len = len(all_states)
     for var, p in rsm.boxes.items():
         for src, transition in p.dfa.to_dict().items():
             for symbol, dst in transition.items():
                 label = symbol.value
-                if symbol not in m:
-                    m[label] = dok_matrix((states_len, states_len), dtype=bool)
-                for target in to_set(dst):
+                if label not in m:
+                    m[label] = dok_matrix((len(all_states), len(all_states)), dtype=bool)
+                for target in ({dst} if not isinstance(dst, set) else dst):
                     m[label][
                         mapping[State((var, src.value))],
                         mapping[State((var, target.value))],
@@ -153,5 +140,6 @@ def rsm_to_mat_with_epsilons(
                     epsilon_symbols.add(label)
 
     result = FiniteAutomaton(m, start_states, final_states, mapping)
-    result.states_count = states_len
+    result.states_count = len(all_states)
+
     return result, epsilon_symbols
