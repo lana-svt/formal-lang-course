@@ -16,51 +16,58 @@ from project.task3 import (
 
 
 def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
-    prods = dict()
-    for p in cfg.productions:
-        if len(p.body) == 0:
-            regex = Regex(Epsilon().to_text())
-        else:
-            regex = Regex(" ".join(var.value for var in p.body))
-        if Symbol(p.head) not in prods:
-            prods[Symbol(p.head)] = regex
-        else:
-            prods[Symbol(p.head)] = prods[Symbol(p.head)].union(regex)
+    productions_dict = {}
 
-    result = dict()
+    for production_item in cfg.productions:
+        body_regex = Epsilon().to_text() if len(
+            production_item.body) == 0 else " ".join(var.value for var in production_item.body
+        )
+        head_symbol = Symbol(production_item.head)
+        if head_symbol not in productions_dict:
+            productions_dict[head_symbol] = [body_regex]
+        else:
+            productions_dict[head_symbol].append(body_regex)
 
-    for var, regex in prods.items():
-        result[Symbol(var)] = Box(
-            regex.to_epsilon_nfa().to_deterministic(), Symbol(var)
+    result_dict = {}
+
+    for symbol, regex_list in productions_dict.items():
+        combined_regex = "|".join(regex_list)
+        regex = Regex(combined_regex)
+        result_dict[Symbol(symbol)] = Box(
+            regex.to_epsilon_nfa().to_deterministic(), Symbol(symbol)
         )
 
-    return RecursiveAutomaton(set(result.keys()), Symbol("S"), set(result.values()))
+    return RecursiveAutomaton(set(result_dict.keys()), Symbol("S"), set(result_dict.values()))
+
 
 
 def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
-    prods = dict()
+    productions_dict = {}
 
-    for p in ebnf.splitlines():
-        p = p.strip()
-        if "->" not in p:
+    for production_line in ebnf.splitlines():
+        production_line = production_line.strip()
+        if "->" not in production_line:
             continue
 
-        head, body = p.split("->")
+        head, body = production_line.split("->")
         head = head.strip()
         body = body.strip() if body.strip() != "" else Epsilon().to_text()
 
-        if head in prods:
-            prods[head] += " | " + body
+        if head not in productions_dict:
+            productions_dict[head] = [body]
         else:
-            prods[head] = body
+            productions_dict[head].append(body)
 
-    result = dict()
-    for var, regex in prods.items():
-        result[Symbol(var)] = Box(
-            Regex(regex).to_epsilon_nfa().to_deterministic(), Symbol(var)
+    result_dict = {}
+
+    for symbol, regex_list in productions_dict.items():
+        combined_regex = "|".join(regex_list)
+        regex = Regex(combined_regex)
+        result_dict[Symbol(symbol)] = Box(
+            regex.to_epsilon_nfa().to_deterministic(), Symbol(symbol)
         )
 
-    return RecursiveAutomaton(set(result.keys()), Symbol("S"), set(result.values()))
+    return RecursiveAutomaton(set(result_dict.keys()), Symbol("S"), set(result_dict.values()))
 
 
 def cfpq_with_tensor(
@@ -73,7 +80,6 @@ def cfpq_with_tensor(
     graph_mat = nfa_to_matrix(graph_to_nfa(graph, start_nodes, final_nodes))
 
     num_states = graph_mat.size()
-
     last_nnz: int = 0
 
     while True:
