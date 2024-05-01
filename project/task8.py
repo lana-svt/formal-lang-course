@@ -130,7 +130,9 @@ def rsm_to_matrix(rsm: RecursiveAutomaton) -> tuple:
             for symbol, dst in transition.items():
                 label = symbol.value
                 if label not in m:
-                    m[label] = dok_matrix((len(all_states), len(all_states)), dtype=bool)
+                    m[label] = dok_matrix(
+                    (len(all_states), len(all_states)), dtype=bool
+                    )
                 for target in ({dst} if not isinstance(dst, set) else dst):
                     m[label][
                         mapping[State((var, src.value))],
