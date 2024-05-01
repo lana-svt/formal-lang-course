@@ -44,7 +44,6 @@ def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
     )
 
 
-
 def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
     productions_dict = {}
 
@@ -117,6 +116,7 @@ def cfpq_with_tensor(
                 result.add((graph_mat.indexes_dict()[i], graph_mat.indexes_dict()[j]))
 
     return result
+
 
 def rsm_to_matrix(rsm: RecursiveAutomaton) -> tuple:
     all_states = set()
