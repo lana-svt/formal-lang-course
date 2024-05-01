@@ -14,6 +14,7 @@ from project.task3 import (
     intersect_automata,
 )
 
+
 def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
     prods = dict()
     for p in cfg.productions:
@@ -36,6 +37,7 @@ def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
     return RecursiveAutomaton(
         set(result.keys()), Symbol("S"), set(result.values())
     )
+
 
 def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
     prods = dict()
@@ -64,13 +66,13 @@ def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
         set(result.keys()), Symbol("S"), set(result.values())
     )
 
-def cfpq_with_tensor(
-    rsm: RecursiveAutomaton,
-    graph: nx.MultiDiGraph,
-    final_nodes: set[int] = None,
-    start_nodes: set[int] = None,
-) -> set[tuple[int, int]]:
 
+def cfpq_with_tensor(
+        rsm: RecursiveAutomaton,
+        graph: nx.MultiDiGraph,
+        final_nodes: set[int] = None,
+        start_nodes: set[int] = None,
+) -> set[tuple[int, int]]:
     rsm_mat, _ = rsm_to_mat_with_epsilons(rsm)
     graph_mat = nfa_to_matrix(graph_to_nfa(graph, start_nodes, final_nodes))
 
@@ -109,7 +111,7 @@ def cfpq_with_tensor(
 
 
 def rsm_to_mat_with_epsilons(
-    rsm: RecursiveAutomaton,
+        rsm: RecursiveAutomaton,
 ) -> (FiniteAutomaton, set[Epsilon]):
     all_states = set()
     start_states = set()
