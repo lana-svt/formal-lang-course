@@ -11,10 +11,10 @@ from project.task8 import rsm_to_matrix
 
 
 def cfpq_with_gll(
-        rsm: RecursiveAutomaton,
-        graph: nx.DiGraph,
-        start_nodes: set[int] = None,
-        final_nodes: set[int] = None,
+    rsm: RecursiveAutomaton,
+    graph: nx.DiGraph,
+    start_nodes: set[int] = None,
+    final_nodes: set[int] = None,
 ) -> set[tuple[int, int]]:
     rsm_mat, _ = rsm_to_matrix(rsm)
 
@@ -46,8 +46,8 @@ def cfpq_with_gll(
     for _, m in graph_mat.m.items():
         for i, j in zip(*m.nonzero()):
             if (
-                    graph_mat.indexes_dict()[i] in rsm_mat.start
-                    and graph_mat.indexes_dict()[j] in rsm_mat.final
+                graph_mat.indexes_dict()[i] in rsm_mat.start
+                and graph_mat.indexes_dict()[j] in rsm_mat.final
             ):
                 result.add((graph_mat.indexes_dict()[i], graph_mat.indexes_dict()[j]))
 
