@@ -24,13 +24,14 @@ set_expr: '[' expr (',' expr)* ']';
 
 edge_expr: '(' expr ',' expr ',' expr ')';
 
-regexp: CHAR
-      | VAR
-      | '(' regexp ')'
-      | (regexp '|' regexp)
-      | (regexp '^' range)
-      | (regexp '.' regexp)
-      | (regexp '&' regexp);
+regexp: primary_regexp ((op=REGEXP_OP primary_regexp)*) ;
+
+primary_regexp: CHAR
+              | VAR
+              | '(' regexp ')'
+              | CHAR '^' range
+              | CHAR '.' CHAR
+              | CHAR '&' CHAR ;
 
 range: '[' NUM '..' NUM? ']';
 
@@ -41,4 +42,5 @@ v_filter: 'for' VAR 'in' expr;
 VAR: [a-z] [a-z0-9]*;
 NUM: '0' | [1-9] [0-9]*;
 CHAR: '"' [a-z] '"';
+REGEXP_OP: '|' | '^' | '.' | '&';
 WS: [ \t\r\n]+ -> skip;
