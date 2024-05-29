@@ -6,6 +6,8 @@ from pyformlang.finite_automaton import (
 from scipy.sparse import dok_matrix, kron
 from networkx import MultiDiGraph
 from project.task2 import graph_to_nfa, regex_to_dfa
+
+
 class FiniteAutomaton:
 
     transitions = None
@@ -33,7 +35,11 @@ class FiniteAutomaton:
                 self.start_states,
                 self.final_states,
                 self.states_mapping,
-            ) = (mat.transitions, mat.start_states, mat.final_states, mat.states_mapping)
+            ) = (mat.transitions,
+                 mat.start_states,
+                 mat.final_states,
+                 mat.states_mapping
+                 )
         else:
             self.transitions = obj
             self.final_states = final_states
@@ -64,7 +70,11 @@ class FiniteAutomaton:
         return [self.map_state_index(t) for t in self.start_states]
 
     def labels(self):
-        return self.states_mapping.keys() if self.is_deterministic else self.transitions.keys()
+        return (
+            self.states_mapping.keys()
+            if self.is_deterministic
+            else self.transitions.keys()
+        )
 
     def size(self):
         return len(self.states_mapping)
@@ -147,7 +157,9 @@ def intersect_automata(
 
     for label in labels:
         transitions[label] = kron(
-            automaton1.transitions[label], automaton2.transitions[label], matrix_class_id
+            automaton1.transitions[label],
+            automaton2.transitions[label],
+            matrix_class_id
         )
 
     for u, i in automaton1.states_mapping.items():

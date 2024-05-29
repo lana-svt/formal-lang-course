@@ -1,6 +1,7 @@
 from scipy.sparse import dok_matrix, block_diag
 from project.task3 import FiniteAutomaton
 
+
 def reachability_with_constraints(
     fa: FiniteAutomaton, constraints_fa: FiniteAutomaton
 ) -> dict[int, set[int]]:
@@ -37,4 +38,3 @@ def reachability_with_constraints(
             last_front_hash = current_front_hash
 
     return result
-
