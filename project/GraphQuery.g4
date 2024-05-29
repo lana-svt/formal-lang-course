@@ -1,7 +1,5 @@
 grammar GraphQuery;
 
-grammar GraphQuery;
-
 prog: stmt* EOF;
 
 stmt: declare

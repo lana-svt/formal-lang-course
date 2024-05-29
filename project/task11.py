@@ -4,7 +4,9 @@ from project.GraphQueryLexer import GraphQueryLexer
 from project.GraphQueryParser import GraphQueryParser
 
 def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
-    parser = GraphQueryParser(CommonTokenStream(GraphQueryLexer(InputStream(program))))
+    lexer = GraphQueryLexer(InputStream(program))
+    stream = CommonTokenStream(lexer)
+    parser = GraphQueryParser(stream)
     tree = parser.prog()
     return tree, parser.getNumberOfSyntaxErrors() == 0
 
