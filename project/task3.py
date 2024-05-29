@@ -35,11 +35,12 @@ class FiniteAutomaton:
                 self.start_states,
                 self.final_states,
                 self.states_mapping,
-            ) = (mat.transitions,
-                 mat.start_states,
-                 mat.final_states,
-                 mat.states_mapping
-                 )
+            ) = (
+                mat.transitions,
+                mat.start_states,
+                mat.final_states,
+                mat.states_mapping
+            )
         else:
             self.transitions = obj
             self.final_states = final_states
@@ -159,7 +160,7 @@ def intersect_automata(
         transitions[label] = kron(
             automaton1.transitions[label],
             automaton2.transitions[label],
-            matrix_class_id
+            matrix_class_id,
         )
 
     for u, i in automaton1.states_mapping.items():
