@@ -29,13 +29,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install antlr4-python3-runtime
 
-      - name: Download ANTLR
+      - name: Set up Java
         run: |
-          wget https://www.antlr.org/download/antlr-4.9.2-complete.jar
-
-      - name: Generate parser
-        run: |
-          java -jar antlr-4.9.2-complete.jar -Dlanguage=Python3 GraphQuery.g4
+          antlr4 -Dlanguage=Python3 project/GraphQuery.g4 -visitor
 
       - name: Test with pytest
         run: |
