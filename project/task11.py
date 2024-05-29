@@ -1,7 +1,6 @@
 from antlr4 import *
-from GraphQueryLexer import GraphQueryLexer
-from GraphQueryParser import GraphQueryParser
-
+from project.GraphQueryLexer import GraphQueryLexer
+from project.GraphQueryParser import GraphQueryParser
 
 def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
     input_stream = InputStream(program)
