@@ -10,20 +10,21 @@ def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
     tree = parser.prog()
     return tree, parser.getNumberOfSyntaxErrors() == 0
 
-def nodes_count(tree: ParserRuleContext) -> int:
-    if not tree:
+def count_nodes(tree: ParserRuleContext) -> int:
+    if tree is None:
         return 0
-    count = 1
-    for i in range(tree.getChildCount()):
-        count += nodes_count(tree.getChild(i))
-    return count
+    total_nodes = 1
+    for child_index in range(tree.getChildCount()):
+        total_nodes += count_nodes(tree.getChild(child_index))
+    return total_nodes
 
-def tree_to_prog(tree: ParserRuleContext) -> str:
-    if not tree:
+def convert_tree_to_string(tree: ParserRuleContext) -> str:
+    if tree is None:
         return ""
     if tree.getChildCount() == 0:
         return tree.getText()
-    result = ""
-    for i in range(tree.getChildCount()):
-        result += tree_to_prog(tree.getChild(i)) + " "
-    return result.strip()
+    children_texts = []
+    for child_index in range(tree.getChildCount()):
+        children_texts.append(convert_tree_to_string(tree.getChild(child_index)))
+    return " ".join(children_texts)
+
