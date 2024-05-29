@@ -1,16 +1,22 @@
 grammar GraphQuery;
 
-prog: stmt*;
+grammar GraphQuery;
 
-stmt: bind | add | remove | declare;
+prog: stmt* EOF;
 
-declare: 'let' VAR 'is' 'graph';
+stmt: declare
+    | bind
+    | add
+    | remove
+    ;
 
-bind: 'let' VAR '=' expr;
+declare: 'let' VAR 'is' 'graph' ;
 
-remove: 'remove' ('vertex' | 'edge' | 'vertices') expr 'from' VAR;
+bind: 'let' VAR '=' expr ;
 
-add: 'add' ('vertex' | 'edge') expr 'to' VAR;
+remove: 'remove' ('vertex' | 'edge' | 'vertices') expr 'from' VAR ;
+
+add: 'add' ('vertex' | 'edge') expr 'to' VAR ;
 
 expr: NUM
     | CHAR
@@ -18,29 +24,30 @@ expr: NUM
     | edge_expr
     | set_expr
     | regexp
-    | select;
+    | select
+    ;
 
-set_expr: '[' expr (',' expr)* ']';
+set_expr: '[' expr (',' expr)* ']' ;
 
-edge_expr: '(' expr ',' expr ',' expr ')';
+edge_expr: '(' expr ',' expr ',' expr ')' ;
 
-regexp: primary_regexp ((op=REGEXP_OP primary_regexp)*) ;
+regexp: CHAR
+      | VAR
+      | '(' regexp ')'
+      | regexp '|' regexp
+      | regexp '^' range
+      | regexp '.' regexp
+      | regexp '&' regexp
+      ;
 
-primary_regexp: CHAR
-              | VAR
-              | '(' regexp ')'
-              | CHAR '^' range
-              | CHAR '.' CHAR
-              | CHAR '&' CHAR ;
+range: '[' NUM '..' NUM? ']' ;
 
-range: '[' NUM '..' NUM? ']';
+select: v_filter? v_filter? 'return' VAR (',' VAR)? 'where' VAR 'reachable' 'from' VAR 'in' VAR 'by' expr ;
 
-select: v_filter? v_filter? 'return' VAR (',' VAR)? 'where' VAR 'reachable' 'from' VAR 'in' VAR 'by' expr;
+v_filter: 'for' VAR 'in' expr ;
 
-v_filter: 'for' VAR 'in' expr;
+WS: [ \r\n\t]+ -> skip;
 
-VAR: [a-z] [a-z0-9]*;
-NUM: '0' | [1-9] [0-9]*;
+VAR: [a-z] [a-z_"0-9]*;
+NUM: '0' | ([1-9][0-9]*);
 CHAR: '"' [a-z] '"';
-REGEXP_OP: '|' | '^' | '.' | '&';
-WS: [ \t\r\n]+ -> skip;
