@@ -2,6 +2,7 @@ from antlr4 import *
 from antlr4.InputStream import InputStream
 from project.GraphQueryLexer import GraphQueryLexer
 from project.GraphQueryParser import GraphQueryParser
+from project.GraphQueryVisitor import GraphQueryVisitor
 
 
 def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
@@ -13,19 +14,35 @@ def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
 
 
 def nodes_count(tree: ParserRuleContext) -> int:
-    if not tree:
-        return 0
-    count = 1
-    for i in range(tree.getChildCount()):
-        count += nodes_count(tree.getChild(i))
+    count = 0
+
+    def enterEveryRule(ctx):
+        nonlocal count
+        count += 1
+
+    walker = ParseTreeWalker()
+    listener = make_listener(enterEveryRule)
+    walker.walk(listener, tree)
     return count
 
+
 def tree_to_prog(tree: ParserRuleContext) -> str:
-    if not tree:
-        return ""
-    if tree.getChildCount() == 0:
-        return tree.getText()
-    result = ""
-    for i in range(tree.getChildCount()):
-        result += tree_to_prog(tree.getChild(i)) + " "
-    return result.strip()
+    progText = ""
+
+    def enterEveryRule(ctx):
+        nonlocal progText
+        progText += ctx.getText()
+
+    walker = ParseTreeWalker()
+    listener = make_listener(enterEveryRule)
+    walker.walk(listener, tree)
+    return progText
+
+
+def make_listener(enterEveryRule):
+    def enterRule(ctx):
+        enterEveryRule(ctx)
+
+    listener = ParseTreeListener()
+    listener.enterEveryRule = enterRule
+    return listener
