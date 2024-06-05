@@ -1,40 +1,62 @@
-from scipy.sparse import dok_matrix, block_diag
 from project.task3 import FiniteAutomaton
+from scipy.sparse import *
+
+
+def diagonalise(m):
+    h = m.shape[0]
+
+    res = dok_matrix(m.shape, dtype=bool)
+
+    for i in range(h):
+        for j in range(h):
+            if m[j, i]:
+                res[i] += m[j]
+
+    return res
 
 
 def reachability_with_constraints(
     fa: FiniteAutomaton, constraints_fa: FiniteAutomaton
 ) -> dict[int, set[int]]:
-    m, n = constraints_fa.size(), fa.size()
-    result = {s: set() for s in fa.start_states}
 
-    common_labels = fa.labels() & constraints_fa.labels()
-    adj = {
-        label: block_diag((constraints_fa.transitions[label], fa.transitions[label]))
-        for label in common_labels
-    }
+    ms = {}
 
-    for v in fa.start_states:
-        front = dok_matrix((m, m + n), dtype=bool)
-        for i in constraints_fa.start_indices():
-            front[i, i] = True
-        for i in range(m):
-            front[i, v + m] = True
+    ls = fa.matrix.keys() & constraints_fa.matrix.keys()
+    m, n = len(constraints_fa.i_to_state), len(fa.i_to_state)
 
-        last_front_hash = -1
+    for l in ls:
+        A = constraints_fa.matrix[l]
+        B = fa.matrix[l]
+        ms[l] = block_diag((A, B))
+
+    h = m
+    w = m + n
+
+    res = {s.value: set() for s in fa.i_to_state}
+
+    for st in fa.start_states:
+        front = dok_matrix((h, w), dtype=bool)
+        for cst in constraints_fa.start_states:
+            front[cst, cst] = True
+
+        for i in range(h):
+            front[i, st + m] = True
+
+        if st in fa.final_states:
+            for i in constraints_fa.start_states:
+                if i in constraints_fa.final_states:
+                    res[fa.i_to_state[st]].add(fa.i_to_state[st])
+
         for _ in range(m * n):
-            front = sum(
-                [dok_matrix((m, m + n), dtype=bool)]
-                + [front @ adj[label] for label in common_labels]
-            )
+            new_front = dok_matrix((h, w), dtype=bool)
+            for l in ls:
+                new_front += diagonalise(front @ ms[l])
+            front = new_front
+            for i in range(h):
+                if i in constraints_fa.final_states and front[i, i]:
+                    for j in range(n):
+                        if j in fa.final_states and front[i, j + m]:
+                            res[fa.i_to_state[st]].add(fa.i_to_state[j])
+    return res
 
-            front_indices = front[:, m:].nonzero()
-            for a, b in zip(front_indices[0], front_indices[1]):
-                if a in constraints_fa.final_indices() and b in fa.final_indices():
-                    result[v].add(b)
-            current_front_hash = hash(str(front_indices))
-            if current_front_hash == last_front_hash:
-                break
-            last_front_hash = current_front_hash
 
-    return result
