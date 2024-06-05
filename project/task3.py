@@ -39,7 +39,7 @@ class FiniteAutomaton:
                 mat.transitions,
                 mat.start_states,
                 mat.final_states,
-                mat.states_mapping
+                mat.states_mapping,
             )
         else:
             self.transitions = obj

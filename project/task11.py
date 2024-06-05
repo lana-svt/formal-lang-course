@@ -14,8 +14,8 @@ def prog_to_tree(program: str) -> tuple[ParserRuleContext, bool]:
     return tree, parser.getNumberOfSyntaxErrors() == 0
 
 
-def nodes_count(parse_tree: ParserRuleContext) -> int:
-    class NodeCounter(GraphQueryListener):
+def nodes_count(tree: ParserRuleContext) -> int:
+    class NodeCounterListener(GraphQueryListener):
         def __init__(self) -> None:
             super(GraphQueryListener, self).__init__()
             self.node_count = 0
@@ -23,22 +23,20 @@ def nodes_count(parse_tree: ParserRuleContext) -> int:
         def enterEveryRule(self, ctx):
             self.node_count += 1
 
-    node_counter = NodeCounter()
-    walker = ParseTreeWalker()
-    walker.walk(node_counter, parse_tree)
+    node_counter = NodeCounterListener()
+    tree.enterRule(node_counter)
     return node_counter.node_count
 
-
-def tree_to_prog(parse_tree: ParserRuleContext) -> str:
-    class TextCollector(GraphQueryListener):
+def tree_to_prog(tree: ParserRuleContext) -> str:
+    class ProgramTextListener(GraphQueryListener):
         def __init__(self):
             super(GraphQueryListener, self).__init__()
-            self.collected_text = ""
+            self.program_text = ""
 
         def enterEveryRule(self, ctx):
-            self.collected_text += ctx.getText()
+            self.program_text += ctx.getText()
 
-    text_collector = TextCollector()
-    walker = ParseTreeWalker()
-    walker.walk(text_collector, parse_tree)
-    return text_collector.collected_text
+    program_text_listener = ProgramTextListener()
+    tree.enterRule(program_text_listener)
+    return program_text_listener.program_text
+
