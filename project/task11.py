@@ -27,6 +27,7 @@ def nodes_count(tree: ParserRuleContext) -> int:
     tree.enterRule(node_counter)
     return node_counter.node_count
 
+
 def tree_to_prog(tree: ParserRuleContext) -> str:
     class ProgramTextListener(GraphQueryListener):
         def __init__(self):
@@ -39,4 +40,3 @@ def tree_to_prog(tree: ParserRuleContext) -> str:
     program_text_listener = ProgramTextListener()
     tree.enterRule(program_text_listener)
     return program_text_listener.program_text
-
