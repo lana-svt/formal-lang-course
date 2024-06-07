@@ -1,42 +1,55 @@
-from project.task3 import FiniteAutomaton, transitive_closure
-from itertools import product
-from pyformlang.finite_automaton import State
-from scipy.sparse import kron
+from scipy.sparse import dok_matrix, block_diag
+
+from project.task3 import FiniteAutomaton
 
 
 def reachability_with_constraints(
-    fa: FiniteAutomaton, constraints_fa: FiniteAutomaton
+    automaton: FiniteAutomaton, constraint_automaton: FiniteAutomaton
 ) -> dict[int, set[int]]:
-    intersection_m = {
-        label: kron(fa.m[label], constraints_fa.m[label], "csr")
-        for label in fa.m.keys() & constraints_fa.m.keys()
+    m, n = constraint_automaton.size(), automaton.size()
+
+    def get_front(start_state_index):
+        front = dok_matrix((m, m + n), dtype=bool)
+        for i in constraint_automaton.start_indices():
+            front[i, i] = True
+        for i in range(m):
+            front[i, start_state_index + m] = True
+        return front
+
+    def diag(mat):
+        result = dok_matrix(mat.shape, dtype=bool)
+        for i in range(mat.shape[0]):
+            for j in range(mat.shape[0]):
+                if mat[j, i]:
+                    result[i] += mat[j]
+        return result
+
+    common_labels = automaton.labels() & constraint_automaton.labels()
+    result = {s: set() for s in automaton.start_states}
+    adj = {
+        label: block_diag(
+            (constraint_automaton.transitions[label], automaton.transitions[label])
+        )
+        for label in common_labels
     }
 
-    closure_m = transitive_closure(FiniteAutomaton(intersection_m))
-
-    intersection_start_indices = {
-        len(constraints_fa.mapping) * fa.mapping[state]
-        + constraints_fa.mapping[State(label)]
-        for state, label in product(fa.start, constraints_fa.start)
-    }
-    intersection_final_indices = {
-        len(constraints_fa.mapping) * fa.mapping[state]
-        + constraints_fa.mapping[State(label)]
-        for state, label in product(fa.final, constraints_fa.final)
-    }
-
-    state_mapping = {v: i for i, v in enumerate(fa.mapping)}
-    result_dict = {state_mapping[index]: set() for index in fa.start}
-
-    for source, target in zip(*closure_m.nonzero()):
-        source_label = closure_m[source, target]
-        if (
-            source in intersection_start_indices
-            and target in intersection_final_indices
-            and source_label in intersection_m
-        ):
-            result_dict[state_mapping[source // len(constraints_fa.mapping)]].add(
-                state_mapping[target // len(constraints_fa.mapping)]
+    for v in automaton.start_indices():
+        front = get_front(v)
+        last_hash = -1
+        for _ in range(m * n):
+            front = sum(
+                [dok_matrix((m, m + n), dtype=bool)]
+                + [diag(front @ adj[label]) for label in common_labels]
             )
+            fr = front[:, m:].nonzero()
+            for a, b in zip(fr[0], fr[1]):
+                if (
+                    a in constraint_automaton.final_indices()
+                    and b in automaton.final_indices()
+                ):
+                    result[v].add(b)
+                if hash(str(fr)) == last_hash:
+                    break
+                last_hash = hash(str(fr))
 
-    return result_dict
+    return result

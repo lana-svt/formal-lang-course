@@ -1,18 +1,15 @@
-import networkx as nx
+import pyformlang
+import scipy
+from networkx import DiGraph
+from project import task3
 from pyformlang.cfg import Epsilon
 from pyformlang.finite_automaton import State, Symbol
 from pyformlang.regular_expression import Regex
 from pyformlang.rsa import Box
-from scipy.sparse import dok_matrix, eye
+from scipy.sparse import dok_matrix
 from pyformlang.cfg import CFG
 from pyformlang.rsa import RecursiveAutomaton
 from project.task2 import graph_to_nfa
-from project.task3 import (
-    FiniteAutomaton,
-    nfa_to_matrix,
-    transitive_closure,
-    intersect_automata,
-)
 
 
 def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
@@ -76,84 +73,93 @@ def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
 
 
 def cfpq_with_tensor(
-    rsm: RecursiveAutomaton,
-    graph: nx.MultiDiGraph,
-    final_nodes: set[int] = None,
+    rsm: pyformlang.rsa.RecursiveAutomaton,
+    graph: DiGraph,
     start_nodes: set[int] = None,
+    final_nodes: set[int] = None,
 ) -> set[tuple[int, int]]:
-    rsm_mat, _ = rsm_to_matrix(rsm)
-    graph_mat = nfa_to_matrix(graph_to_nfa(graph, start_nodes, final_nodes))
+    if isinstance(rsm, CFG):
+        rsm = cfg_to_rsm(rsm)
 
-    num_states = graph_mat.size()
-    last_nnz: int = 0
-
-    while True:
-        closure = transitive_closure(intersect_automata(rsm_mat, graph_mat)).nonzero()
-        closure = list(zip(*closure))
-
-        nnz_count = len(closure)
-        if nnz_count == last_nnz:
-            break
-        last_nnz = nnz_count
-
-        for i, j in closure:
-            src = rsm_mat.mapping_for(i)
-            dst = rsm_mat.mapping_for(j)
-
-            if src in rsm_mat.start and dst in rsm_mat.final:
-                var = rsm_mat.indexes_dict()[i].value[0]
-                if var not in graph_mat.m:
-                    graph_mat.m[var] = dok_matrix((num_states, num_states), dtype=bool)
-                graph_mat.m[var][i, j] = True
-
-    result: set[tuple[int, int]] = set()
-    for _, m in graph_mat.m.items():
-        for i, j in zip(*m.nonzero()):
-            if (
-                graph_mat.indexes_dict()[i] in rsm_mat.start
-                and graph_mat.indexes_dict()[j] in rsm_mat.final
-            ):
-                result.add((graph_mat.indexes_dict()[i], graph_mat.indexes_dict()[j]))
-
-    return result
-
-
-def rsm_to_matrix(rsm: RecursiveAutomaton) -> tuple:
-    all_states = set()
+    states = set()
     start_states = set()
     final_states = set()
-    epsilon_symbols = set()
+    null_symb = set()
 
-    for var, p in rsm.boxes.items():
-        for state in p.dfa.states:
-            s = State((var, state.value))
-            all_states.add(s)
-            if state in p.dfa.start_states:
+    for v, a in rsm.boxes.items():
+        for state in a.dfa.states:
+            s = State((v, state.value))
+            states.add(s)
+            if state in a.dfa.start_states:
                 start_states.add(s)
-            if state in p.dfa.final_states:
+            if state in a.dfa.final_states:
                 final_states.add(s)
 
-    mapping = {v: i for i, v in enumerate(sorted(all_states, key=lambda x: x.value[1]))}
+    ls = len(states)
+    states_map = {}
+    for i, v in enumerate(sorted(states, key=lambda x: x.value[1])):
+        states_map[v] = i
 
-    m = {}
-
+    m = dict()
     for var, p in rsm.boxes.items():
         for src, transition in p.dfa.to_dict().items():
             for symbol, dst in transition.items():
                 label = symbol.value
                 if label not in m:
-                    m[label] = dok_matrix(
-                        (len(all_states), len(all_states)), dtype=bool
-                    )
-                for target in {dst} if not isinstance(dst, set) else dst:
-                    m[label][
-                        mapping[State((var, src.value))],
-                        mapping[State((var, target.value))],
-                    ] = True
+                    m[label] = dok_matrix((ls, ls), dtype=bool)
+
+                dst = {dst} if not isinstance(dst, set) else dst
+                for target in dst:
+                    sts_src = states_map[State((var, src.value))]
+                    sts_target = states_map[State((var, target.value))]
+                    m[label][sts_src, sts_target] = True
                 if isinstance(dst, Epsilon):
-                    epsilon_symbols.add(label)
+                    null_symb.add(label)
 
-    result = FiniteAutomaton(m, start_states, final_states, mapping)
-    result.states_count = len(all_states)
+    result = task3.FiniteAutomaton(m, start_states, final_states, states_map)
+    result.epsilon_symbol = null_symb
+    result.number_of_states = ls
 
-    return result, epsilon_symbols
+    graph_matrix = task3.nfa_to_mat(graph_to_nfa(graph, start_nodes, final_nodes))
+    mat = result
+    graph_matrix_inds = graph_matrix.indices_dict()
+    mat_idx = mat.indices_dict()
+
+    n = graph_matrix.size()
+
+    for var in mat.epsilon_symbol:
+        if var not in graph_matrix.transitions:
+            graph_matrix.transitions[var] = dok_matrix((n, n), dtype=bool)
+        graph_matrix.transitions[var] += scipy.sparse.eye(n, dtype=bool)
+
+    last = 0
+    cur = None
+    while cur != last:
+        last = cur
+        closure = task3.transitive_closure(
+            task3.intersect_automata(mat, graph_matrix)
+        ).nonzero()
+        closure = list(zip(*closure))
+        cur = len(closure)
+
+        for i, j in closure:
+            s = mat_idx[i // n]
+            d = mat_idx[j // n]
+
+            if s in mat.start_states and d in mat.final_states:
+                var = s.value[0]
+                if var not in graph_matrix.transitions:
+                    graph_matrix.transitions[var] = dok_matrix((n, n), dtype=bool)
+                graph_matrix.transitions[var][i % n, j % n] = True
+
+    result = set()
+    for _, matrix in graph_matrix.transitions.items():
+        non_zero_indices = matrix.nonzero()
+        for i, j in zip(*non_zero_indices):
+            if (
+                graph_matrix_inds[i] in mat.start_states
+                and graph_matrix_inds[j] in mat.final_states
+            ):
+                result.add((graph_matrix_inds[i], graph_matrix_inds[j]))
+
+    return result
