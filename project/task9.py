@@ -27,7 +27,11 @@ def cfpq_with_gll(
     if end_nodes is None:
         end_nodes = set(digraph.nodes)
 
-    nonterm_start_rsm = automaton.initial_label.value if automaton.initial_label.value is not None else "S"
+    nonterm_start_rsm = (
+        automaton.initial_label.value
+        if automaton.initial_label.value is not None
+        else "S"
+    )
     start_rsm = automaton.boxes[automaton.initial_label].dfa.start_state.value
 
     res = set()
