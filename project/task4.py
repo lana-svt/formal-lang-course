@@ -27,7 +27,9 @@ def reachability_with_constraints(
     common_labels = automaton.labels() & constraint_automaton.labels()
     result = {s: set() for s in automaton.start_states}
     adj = {
-        label: block_diag((constraint_automaton.transitions[label], automaton.transitions[label]))
+        label: block_diag(
+            (constraint_automaton.transitions[label], automaton.transitions[label])
+        )
         for label in common_labels
     }
 
@@ -41,7 +43,10 @@ def reachability_with_constraints(
             )
             fr = front[:, m:].nonzero()
             for a, b in zip(fr[0], fr[1]):
-                if a in constraint_automaton.final_indices() and b in automaton.final_indices():
+                if (
+                    a in constraint_automaton.final_indices()
+                        and b in automaton.final_indices()
+                ):
                     result[v].add(b)
                 if hash(str(fr)) == last_hash:
                     break

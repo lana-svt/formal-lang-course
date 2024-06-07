@@ -157,8 +157,8 @@ def cfpq_with_tensor(
         non_zero_indices = matrix.nonzero()
         for i, j in zip(*non_zero_indices):
             if (
-                    graph_matrix_inds[i] in mat.start_states
-                    and graph_matrix_inds[j] in mat.final_states
+                graph_matrix_inds[i] in mat.start_states
+                and graph_matrix_inds[j] in mat.final_states
             ):
                 result.add((graph_matrix_inds[i], graph_matrix_inds[j]))
 
