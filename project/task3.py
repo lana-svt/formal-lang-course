@@ -3,13 +3,13 @@ from pyformlang.finite_automaton import (
     NondeterministicFiniteAutomaton,
     State,
 )
-from scipy.sparse import dok_matrix, kron
+from scipy.sparse import kron
 from networkx import MultiDiGraph
 from project.task2 import graph_to_nfa, regex_to_dfa
+from scipy.sparse import dok_matrix
 
 
 class FiniteAutomaton:
-
     transitions = None
     start_states = None
     final_states = None
@@ -19,7 +19,7 @@ class FiniteAutomaton:
     number_of_states = None
 
     def __init__(
-        self,
+         self,
         obj: any,
         start_states=set(),
         final_states=set(),
@@ -27,7 +27,7 @@ class FiniteAutomaton:
         matrix_class=dok_matrix,
     ):
         if isinstance(obj, DeterministicFiniteAutomaton) or isinstance(
-            obj, NondeterministicFiniteAutomaton
+                obj, NondeterministicFiniteAutomaton
         ):
             mat = nfa_to_mat(obj, matrix_class=matrix_class)
             (
@@ -92,20 +92,20 @@ def nfa_to_mat(
 ) -> FiniteAutomaton:
     states = automaton.to_dict()
     len_states = len(automaton.states)
-    mapping = {v: i for i, v in enumerate(automaton.states)}
-    m = dict()
+    states_mapping = {v: i for i, v in enumerate(automaton.states)}
+    transitions = dict()
 
     for label in automaton.symbols:
-        m[label] = matrix_class((len_states, len_states), dtype=bool)
+        transitions[label] = matrix_class((len_states, len_states), dtype=bool)
         for u, edges in states.items():
             if label in edges:
                 targets = edges[label]
                 if not isinstance(targets, set):
                     targets = {targets}
                 for v in targets:
-                    m[label][mapping[u], mapping[v]] = True
+                    transitions[label][states_mapping[u], states_mapping[v]] = True
 
-    return FiniteAutomaton(m, automaton.start_states, automaton.final_states, mapping)
+    return FiniteAutomaton(transitions, automaton.start_states, automaton.final_states, states_mapping)
 
 
 def mat_to_nfa(automaton: FiniteAutomaton) -> NondeterministicFiniteAutomaton:
@@ -191,13 +191,13 @@ def paths_ends(
     regex_dfa = nfa_to_mat(regex_to_dfa(regex), matrix_class=matrix_class)
 
     intersection = intersect_automata(
-        graph_nfa, regex_dfa, matrix_class_id=matrix_class_id, g=False
+        graph_nfa, regex_dfa, matrix_class_id=matrix_class_id, is_graph=False
     )
     closure = transitive_closure(intersection)
-    mapping = {v: i for i, v in graph_nfa.mapping.items()}
+    mapping = {v: i for i, v in graph_nfa.states_mapping.items()}
     result = []
     for u, v in zip(*closure.nonzero()):
-        if u in intersection.start and v in intersection.final:
+        if State(u) in intersection.start_states and State(v) in intersection.final_states:
             result.append(
                 (mapping[u // regex_dfa.size()], mapping[v // regex_dfa.size()])
             )

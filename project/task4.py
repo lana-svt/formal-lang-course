@@ -1,62 +1,50 @@
+from scipy.sparse import dok_matrix, block_diag
+
 from project.task3 import FiniteAutomaton
-from scipy.sparse import *
-
-
-def diagonalise(m):
-    h = m.shape[0]
-
-    res = dok_matrix(m.shape, dtype=bool)
-
-    for i in range(h):
-        for j in range(h):
-            if m[j, i]:
-                res[i] += m[j]
-
-    return res
 
 
 def reachability_with_constraints(
-    fa: FiniteAutomaton, constraints_fa: FiniteAutomaton
+    automaton: FiniteAutomaton, constraint_automaton: FiniteAutomaton
 ) -> dict[int, set[int]]:
+    m, n = constraint_automaton.size(), automaton.size()
 
-    ms = {}
+    def get_front(start_state_index):
+        front = dok_matrix((m, m + n), dtype=bool)
+        for i in constraint_automaton.start_indices():
+            front[i, i] = True
+        for i in range(m):
+            front[i, start_state_index + m] = True
+        return front
 
-    ls = fa.matrix.keys() & constraints_fa.matrix.keys()
-    m, n = len(constraints_fa.i_to_state), len(fa.i_to_state)
+    def diag(mat):
+        result = dok_matrix(mat.shape, dtype=bool)
+        for i in range(mat.shape[0]):
+            for j in range(mat.shape[0]):
+                if mat[j, i]:
+                    result[i] += mat[j]
+        return result
 
-    for l in ls:
-        A = constraints_fa.matrix[l]
-        B = fa.matrix[l]
-        ms[l] = block_diag((A, B))
+    common_labels = automaton.labels() & constraint_automaton.labels()
+    result = {s: set() for s in automaton.start_states}
+    adj = {
+        label: block_diag((constraint_automaton.transitions[label], automaton.transitions[label]))
+        for label in common_labels
+    }
 
-    h = m
-    w = m + n
-
-    res = {s.value: set() for s in fa.i_to_state}
-
-    for st in fa.start_states:
-        front = dok_matrix((h, w), dtype=bool)
-        for cst in constraints_fa.start_states:
-            front[cst, cst] = True
-
-        for i in range(h):
-            front[i, st + m] = True
-
-        if st in fa.final_states:
-            for i in constraints_fa.start_states:
-                if i in constraints_fa.final_states:
-                    res[fa.i_to_state[st]].add(fa.i_to_state[st])
-
+    for v in automaton.start_indices():
+        front = get_front(v)
+        last_hash = -1
         for _ in range(m * n):
-            new_front = dok_matrix((h, w), dtype=bool)
-            for l in ls:
-                new_front += diagonalise(front @ ms[l])
-            front = new_front
-            for i in range(h):
-                if i in constraints_fa.final_states and front[i, i]:
-                    for j in range(n):
-                        if j in fa.final_states and front[i, j + m]:
-                            res[fa.i_to_state[st]].add(fa.i_to_state[j])
-    return res
+            front = sum(
+                [dok_matrix((m, m + n), dtype=bool)]
+                + [diag(front @ adj[label]) for label in common_labels]
+            )
+            fr = front[:, m:].nonzero()
+            for a, b in zip(fr[0], fr[1]):
+                if a in constraint_automaton.final_indices() and b in automaton.final_indices():
+                    result[v].add(b)
+                if hash(str(fr)) == last_hash:
+                    break
+                last_hash = hash(str(fr))
 
-
+    return result
