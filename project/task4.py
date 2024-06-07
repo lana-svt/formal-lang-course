@@ -45,7 +45,7 @@ def reachability_with_constraints(
             for a, b in zip(fr[0], fr[1]):
                 if (
                     a in constraint_automaton.final_indices()
-                        and b in automaton.final_indices()
+                    and b in automaton.final_indices()
                 ):
                     result[v].add(b)
                 if hash(str(fr)) == last_hash:
