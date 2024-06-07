@@ -3,6 +3,12 @@ from pyformlang.cfg import CFG
 from pyformlang.finite_automaton import State
 from pyformlang.rsa import RecursiveAutomaton
 import networkx as nx
+from copy import deepcopy
+from project.task8 import cfg_to_rsm
+from pyformlang.cfg import CFG
+from pyformlang.finite_automaton import State
+from pyformlang.rsa import RecursiveAutomaton
+import networkx as nx
 from collections import deque
 
 
