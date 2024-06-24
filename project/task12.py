@@ -18,13 +18,6 @@ from project.GraphQueryLexer import GraphQueryLexer
 def build_NDFA_from_graph(
         graph: nx.DiGraph, start: set[State] = None, final: set[State] = None
 ) -> EpsilonNFA:
-    """
-    Builds NDFA from graph representation, start and final nodes
-    :param graph: Graph representation of the resulting NDFA
-    :param start: Start states of the resulting NDFA. If None - all states are considered start states
-    :param final: Final states of the resulting NDFA. If None - all states are considered final states
-    :return: NDFA built from graph representation, start and final nodes
-    """
     ndfa = EpsilonNFA.from_networkx(graph)
 
     for s, f, label in graph.edges(data="label"):
@@ -44,6 +37,8 @@ def build_NDFA_from_graph(
             ndfa.add_final_state(s)
 
     return ndfa
+
+
 class Visitor(GraphQueryVisitor):
     class ID:
         def __init__(self, val: str):
@@ -357,36 +352,16 @@ class Visitor(GraphQueryVisitor):
             raise Exception(f'"{type(expr_r)}" can not be converted to list')
 
 
-def typing_program(program: str) -> bool:
-    try:
-        # Создание парсера и дерева разбора
-        lexer = GraphQueryLexer(InputStream(program))
-        stream = CommonTokenStream(lexer)
-        parser = GraphQueryParser(stream)
-        tree = parser.program()
-
-        # Проверка типов
-        visitor = Visitor()
-        visitor.visit(tree)
-        return True
-    except Exception as e:
-        print(f"Type error: {e}")
-        return False
-
-
 def exec_program(program: str) -> dict[str, set[tuple]]:
     try:
-        # Создание парсера и дерева разбора
         lexer = GraphQueryLexer(InputStream(program))
         stream = CommonTokenStream(lexer)
         parser = GraphQueryParser(stream)
         tree = parser.program()
 
-        # Выполнение программы
         visitor = Visitor()
         visitor.visit(tree)
 
-        # Сбор результатов select
         results = {}
         for var, value in visitor.vars.items():
             if isinstance(value, set):
